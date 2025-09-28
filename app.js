@@ -3,17 +3,9 @@
 // 0) Config + Firebase imports
 import { firebaseConfig, APPLY_FUNCTION_URL } from "./firebaseConfig.js";
 
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-
-import {
-  getAuth, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-import {
-  getDatabase, ref, get, set
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
@@ -185,8 +177,9 @@ onAuthStateChanged(auth, async (user) => {
       ui.signOutBtn.onclick = () => signOut(auth);
     }
 
-    // Load profile
+    // Load profile (now tries ALL three locations)
     const profile = await fetchProfile(user.uid);
+    console.log("Loaded profile source:", profile.__source || "none");
     renderProfile(profile);
 
     // Load jobs & counts
@@ -203,13 +196,30 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function fetchProfile(uid) {
-  // Legacy location
-  const s1 = await get(ref(db, `/Users/${uid}/info`));
-  if (s1.exists()) return { ...s1.val(), uid };
-  // New location
-  const s2 = await get(ref(db, `/users/${uid}/profile`));
-  if (s2.exists()) return { ...s2.val(), uid };
-  return { uid };
+  // 1) Legacy capitalized path
+  let s = await get(ref(db, `/Users/${uid}/info`));
+  if (s.exists()) return { ...s.val(), uid, __source: "Users/info" };
+
+  // 2) Lowercase users with info  ✅ (this was missing)
+  s = await get(ref(db, `/users/${uid}/info`));
+  if (s.exists()) return { ...s.val(), uid, __source: "users/info" };
+
+  // 3) Lowercase users with profile (new schema)
+  s = await get(ref(db, `/users/${uid}/profile`));
+  if (s.exists()) return { ...s.val(), uid, __source: "users/profile" };
+
+  // 4) As a last resort, try /users/{uid} directly
+  s = await get(ref(db, `/users/${uid}`));
+  if (s.exists()) {
+    const val = s.val();
+    // prefer nested objects if present
+    const merged = val.info ? { ...val.info, uid } :
+                   val.profile ? { ...val.profile, uid } :
+                   { ...val, uid };
+    return { ...merged, __source: "users/root" };
+  }
+
+  return { uid, __source: "none" };
 }
 
 function renderProfile(p) {
@@ -294,7 +304,6 @@ function initRolesUI(profile) {
         ensureApplyEnabled(selected);
       }, 1400);
 
-      // Update matched count (likely equals attempted)
       setMatched(n);
     } catch (e) {
       console.error(e);
@@ -309,7 +318,7 @@ function updateMatchedCount(selectedRoles) {
   const keys = selectedRoles.map(toLowerKey);
   const wantedLower = keys; // normalized
   let count = 0;
-  for (const [jobId, job] of Object.entries(ALL_JOBS)) {
+  for (const [, job] of Object.entries(ALL_JOBS)) {
     if (matchesRole(job, wantedLower)) count++;
   }
   setMatched(count);
