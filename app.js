@@ -1,216 +1,312 @@
+// app.js — Dashboard logic (Firebase v10 modular in-browser)
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getDatabase, ref, onValue, get, child, set } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+// 0) Config + Firebase imports
 import { firebaseConfig, APPLY_FUNCTION_URL } from "./firebaseConfig.js";
 
-const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
-// ---- Label helpers ----
-const ACRONYMS = new Set(["IT","CCTV","ELV","GTO","HR","UAE","KSA","GCC","QA","QC"]);
-function toTitleCasePreserveAcronyms(s) {
-  if (!s) return s;
-  const tokens = String(s).split(/([A-Za-z0-9']+)/g);
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (!t || !/[A-Za-z0-9]/.test(t)) continue;
-    const up = t.toUpperCase();
-    if (ACRONYMS.has(up)) { tokens[i] = up; continue; }
-    const lower = t.toLowerCase();
-    tokens[i] = lower.charAt(0).toUpperCase() + lower.slice(1);
-  }
-  return tokens.join("").replace(/\s+/g, " ").trim();
-}
-function displayLabel(name) { return name ? toTitleCasePreserveAcronyms(name) : ""; }
+import {
+  getAuth, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const JOBS_PATH = "/expats_jobs";
-function getAiTag(job){
-  const ai = job?.ai || job?.AI || job?.ml || null;
-  let tag = ai && (ai.titleTag || ai.role || ai.predicted || ai.primaryTag);
-  return tag ? String(tag).trim() : null;
-}
+import {
+  getDatabase, ref, get, set
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-function textOfJob(j){
-  const parts = [j?.jobTitle||j?.title||"", j?.jobDescription||j?.description||"", j?.jobCategory||"", j?.company||""];
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getDatabase();
+
+// 1) Helpers
+const $ = (id) => document.getElementById(id);
+
+const ui = {
+  signOutBtn: $("signOutBtn"),
+  profileCard: $("profileCard"),
+  profileImg: $("profileImg"),
+  profileName: $("profileName"),
+  profileTitle: $("profileTitle"),
+  profileAbout: $("profileAbout"),
+  profileCvLink: $("profileCvLink"),
+  categoriesPanel: $("categoriesPanel"),
+  rolePicker: $("rolePicker"),
+  roleChips: $("roleChips"),
+  totalJobsCount: $("totalJobsCount"),
+  matchedCount: $("matchedCount"),
+  matchedCount2: $("matchedCount2"),
+  applyBtn: $("applyBtn"),
+};
+
+// Minimal role taxonomy (Title Case; “IT” uppercase)
+const ROLE_OPTIONS = [
+  "Barista","Waiter/Waitress","Kitchen Helper","Cook","Chef","Baker","Receptionist",
+  "Sales Executive","Cashier","Storekeeper","Merchandiser","Telesales/Call Center Agent",
+  "Driver (Light)","Driver (Heavy)","Electrician","Plumber","AC Technician","Carpenter",
+  "Mason","Painter","Welder","Mechanic","Auto Electrician","CCTV Technician","Security Guard",
+  "Admin Assistant","Data Entry Clerk","HR Assistant","Accountant","IT Technician",
+  "Web Developer","Software Engineer","QA/QC Engineer","Civil Engineer","Mechanical Engineer",
+  "Electrical Engineer","Site Engineer","Draftsman","Estimator","Foreman","Nurse",
+  "Pharmacist","Teacher","Hairdresser","Beautician","Butcher","Printer (Offset/GTO)"
+];
+
+// Regex map for fallback matching (when AI tag missing)
+const REGEX_MAP = {
+  "barista": [/barista/i],
+  "waiter/waitress": [/waiter|waitress|server/i],
+  "kitchen helper": [/kitchen helper|commis|steward/i],
+  "cook": [/\bcook\b/i],
+  "chef": [/chef|commis/i],
+  "baker": [/baker|pastry/i],
+  "receptionist": [/receptionist/i],
+  "sales executive": [/sales(\s|-)?executive|sales rep|salesperson|sales associate/i],
+  "cashier": [/cashier/i],
+  "storekeeper": [/storekeeper|store keeper|warehouse assistant/i],
+  "merchandiser": [/merchandiser/i],
+  "telesales/call center agent": [/telesales|call center|callcentre|contact center/i],
+  "driver (light)": [/light\s*driver|delivery driver|motorbike|car driver/i],
+  "driver (heavy)": [/heavy\s*driver|trailer|truck driver|crane/i],
+  "electrician": [/electrician/i],
+  "plumber": [/plumber/i],
+  "ac technician": [/ac tech|hvac|air ?conditioning/i],
+  "carpenter": [/carpenter/i],
+  "mason": [/mason/i],
+  "painter": [/painter/i],
+  "welder": [/welder/i],
+  "mechanic": [/mechanic|technician auto/i],
+  "auto electrician": [/auto\s*electric/i],
+  "cctv technician": [/cctv/i],
+  "security guard": [/security guard|watchman/i],
+  "admin assistant": [/admin(istrative)? assistant|office assistant|secretary/i],
+  "data entry clerk": [/data entry/i],
+  "hr assistant": [/hr assistant|human resources/i],
+  "accountant": [/accountant/i],
+  "it technician": [/\bit\b.*(support|technician)|desktop support/i],
+  "web developer": [/web developer|frontend|front-end|javascript developer/i],
+  "software engineer": [/software engineer|backend developer|nodejs|java developer/i],
+  "qa/qc engineer": [/qa|qc|quality assurance|quality control/i],
+  "civil engineer": [/civil engineer/i],
+  "mechanical engineer": [/mechanical engineer/i],
+  "electrical engineer": [/electrical engineer/i],
+  "site engineer": [/site engineer/i],
+  "draftsman": [/draftsman|draughtsman|autocad/i],
+  "estimator": [/estimator|quantity surveyor|qs/i],
+  "foreman": [/foreman|supervisor/i],
+  "nurse": [/nurse/i],
+  "pharmacist": [/pharmacist/i],
+  "teacher": [/teacher|tutor/i],
+  "hairdresser": [/hairdresser|barber|stylist/i],
+  "beautician": [/beautician/i],
+  "butcher": [/butcher/i],
+  "printer (offset/gto)": [/gto|offset printer/i],
+};
+
+function textOfJob(j) {
+  const parts = [
+    j?.jobTitle || j?.title || "",
+    j?.jobDescription || j?.description || "",
+    j?.jobCategory || "",
+    j?.company || j?.companyName || ""
+  ];
   return parts.join(" ").toLowerCase();
 }
-function titleTagMap(){
-  const m = {
-    "barista":[/barista/],
-    "waiter":[/waiter|waitress|server/],
-    "kitchen helper":[/kitchen helper|commis|steward/],
-    "chef":[/chef|cook|commis/i],
-    "baker":[/baker|pastry/],
-    "receptionist":[/receptionist/],
-    "sales executive":[/sales(\s|-)executive|sales rep|salesperson|sales associate/],
-    "cashier":[/cashier/],
-    "storekeeper":[/storekeeper|store keeper|warehouse assistant/],
-    "merchandiser":[/merchandiser/],
-    "telesales":[/telesales|call center|callcentre|contact center/],
-    "driver (light)":[/light\s*driver|delivery driver|motorbike|car driver/],
-    "driver (heavy)":[/heavy\s*driver|trailer|truck driver|crane/],
-    "electrician":[/electrician/],
-    "plumber":[/plumber/],
-    "ac technician":[/ac tech|hvac|air ?conditioning/],
-    "carpenter":[/carpenter/],
-    "mason":[/mason/],
-    "painter":[/painter/],
-    "welder":[/welder/],
-    "mechanic":[/mechanic|technician auto/],
-    "auto electrician":[/auto\s*electric/],
-    "cctv technician":[/cctv/],
-    "security guard":[/security guard|watchman/],
-    "admin assistant":[/admin(istrative)? assistant|office assistant|secretary/],
-    "data entry":[/data entry/],
-    "hr assistant":[/hr assistant|human resources/],
-    "accountant":[/accountant/],
-    "it technician":[/it support|it technician|desktop support/],
-    "web developer":[/web developer|frontend|front-end|javascript developer/],
-    "software engineer":[/software engineer|backend developer|nodejs|java developer/],
-    "qa/qc engineer":[/qa|qc|quality assurance|quality control/],
-    "civil engineer":[/civil engineer/],
-    "mechanical engineer":[/mechanical engineer/],
-    "electrical engineer":[/electrical engineer/],
-    "site engineer":[/site engineer/],
-    "draftsman":[/draftsman|draughtsman|autocad/],
-    "estimator":[/estimator|quantity surveyor|qs/],
-    "foreman":[/foreman|supervisor/],
-    "nurse":[/nurse/],
-    "pharmacist":[/pharmacist/],
-    "teacher":[/teacher|tutor/],
-    "hairdresser":[/hairdresser|barber|stylist/],
-    "beautician":[/beautician/],
-    "butcher":[/butcher/],
-    "printer (offset/gto)":[/gto|offset printer/],
-  };
-  for (const k in m) m[k] = m[k].map(x => x instanceof RegExp ? x : new RegExp(x, "i"));
-  return m;
+
+function aiTag(job) {
+  const ai = job?.ai;
+  if (!ai) return null;
+  const t = ai.titleTag || ai.role || ai.predicted || ai.primaryTag;
+  return t ? String(t).toLowerCase() : null;
 }
 
-let totalsByTitleTag = new Map();
-function computeTitleTags(all){
-  totalsByTitleTag = new Map();
-  const map = titleTagMap();
-  for (const j of all){
-    const ai = getAiTag(j);
-    if (ai) {
-      const key = String(ai).toLowerCase();
-      totalsByTitleTag.set(key, (totalsByTitleTag.get(key)||0)+1);
-      continue;
+function matchesRole(job, wantedLower) {
+  // 1) AI tag
+  const tag = aiTag(job);
+  if (tag && wantedLower.includes(tag)) return true;
+  // 2) Regex fallback
+  const txt = textOfJob(job);
+  for (const [k, regs] of Object.entries(REGEX_MAP)) {
+    if (wantedLower.includes(k)) {
+      if (regs.some(r => r.test(txt))) return true;
     }
-    const txt = textOfJob(j);
-    for (const [tag, regs] of Object.entries(map)){
-      if (regs.some(r => r.test(txt))) {
-        const key = String(tag).toLowerCase();
-        totalsByTitleTag.set(key, (totalsByTitleTag.get(key)||0)+1);
-      }
+  }
+  return false;
+}
+
+function toLowerKey(r) {
+  // Normalize role display → key used in REGEX_MAP / AI
+  const s = r.trim().toLowerCase();
+  // normalize variants matching our keys
+  return s
+    .replace(/waiter\/waitress/, "waiter/waitress")
+    .replace(/telesales\/call center agent/, "telesales/call center agent");
+}
+
+function renderChips(values) {
+  ui.roleChips.innerHTML = values.map(v => `
+    <span class="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs px-2 py-1 rounded-full">
+      ${v}
+    </span>
+  `).join("");
+}
+
+function setMatched(n) {
+  if (ui.matchedCount) ui.matchedCount.textContent = String(n);
+  if (ui.matchedCount2) ui.matchedCount2.textContent = String(n);
+}
+
+function ensureApplyEnabled(values) {
+  const ok = values.length >= 1 && values.length <= 3;
+  ui.applyBtn.disabled = !ok;
+}
+
+// 2) Data cache
+let ALL_JOBS = {};
+let CURRENT_UID = null;
+
+// 3) Auth bootstrap
+if (ui.categoriesPanel) ui.categoriesPanel.classList.add("opacity-0","pointer-events-none");
+
+onAuthStateChanged(auth, async (user) => {
+  try {
+    if (!user) {
+      window.location.href = "auth.html";
+      return;
+    }
+    CURRENT_UID = user.uid;
+
+    // Sign out button
+    if (ui.signOutBtn) {
+      ui.signOutBtn.classList.remove("hidden");
+      ui.signOutBtn.onclick = () => signOut(auth);
+    }
+
+    // Load profile
+    const profile = await fetchProfile(user.uid);
+    renderProfile(profile);
+
+    // Load jobs & counts
+    await loadAllJobs();
+    if (ui.totalJobsCount) ui.totalJobsCount.textContent = Object.keys(ALL_JOBS).length.toString();
+
+    // Init roles UI
+    initRolesUI(profile);
+    ui.categoriesPanel.classList.remove("opacity-0","pointer-events-none");
+
+  } catch (err) {
+    console.error("Auth bootstrap error:", err);
+  }
+});
+
+async function fetchProfile(uid) {
+  // Legacy location
+  const s1 = await get(ref(db, `/Users/${uid}/info`));
+  if (s1.exists()) return { ...s1.val(), uid };
+  // New location
+  const s2 = await get(ref(db, `/users/${uid}/profile`));
+  if (s2.exists()) return { ...s2.val(), uid };
+  return { uid };
+}
+
+function renderProfile(p) {
+  if (ui.profileName) ui.profileName.textContent = p.fullName || p.name || "Your name";
+  if (ui.profileTitle) ui.profileTitle.textContent = p.profession || p.title || "";
+  if (ui.profileAbout) ui.profileAbout.textContent = p.about || "";
+
+  const pid = p.userId || p.uid;
+  if (ui.profileImg) {
+    if ((p.profileImageUrl || p.photoURL) && pid) {
+      ui.profileImg.src = `/i/${pid}`;
+      ui.profileImg.classList.remove("hidden");
+    } else {
+      ui.profileImg.classList.add("hidden");
+    }
+  }
+  if (ui.profileCvLink) {
+    if ((p.userCV || p.cvURL) && pid) {
+      ui.profileCvLink.href = `/cv/${pid}`;
+      ui.profileCvLink.classList.remove("hidden");
+    } else {
+      ui.profileCvLink.classList.add("hidden");
     }
   }
 }
 
-function format(n){ return new Intl.NumberFormat().format(n); }
+async function loadAllJobs() {
+  const snap = await get(ref(db, "/expats_jobs"));
+  ALL_JOBS = snap.exists() ? snap.val() : {};
+}
 
-function renderChips(){
-  const chips = document.getElementById("chips");
-  chips.innerHTML = "";
-  const arr = Array.from(totalsByTitleTag.entries())
-    .map(([name,count]) => ({ name, count }))
-    .sort((a,b)=> b.count - a.count)
-    .slice(0, 60);
-  const selected = new Set();
-  function recomputeSelection(){
-    const sel = Array.from(selected);
-    document.getElementById("selectedLabel").textContent = "Selected: " + (sel.length? sel.map(displayLabel).join(" + ") : "None");
-  }
-  for (const c of arr){
-    const chip = document.createElement("button");
-    chip.className = "px-3 py-1.5 rounded-full border hover:border-gray-300 text-sm";
-    const label = document.createElement("span");
-    label.textContent = displayLabel(c.name);
-    chip.appendChild(label);
-    const count = document.createElement("span");
-    count.className = "ml-2 text-xs text-gray-500";
-    count.textContent = format(c.count);
-    chip.appendChild(count);
-    chip.addEventListener("click", () => {
-      if (selected.has(c.name)) selected.delete(c.name);
-      else {
-        if (selected.size>=3) return; // max 3
-        selected.add(c.name);
-      }
-      chip.classList.toggle("bg-red-50");
-      recomputeSelection();
-    });
-    chips.appendChild(chip);
-  }
-  recomputeSelection();
+// 4) Roles UI
+function initRolesUI(profile) {
+  // Populate multi-select with Role Options
+  ui.rolePicker.innerHTML = ROLE_OPTIONS.map(r => `<option value="${r}">${r}</option>`).join("");
 
-  document.getElementById("btnApply").onclick = async () => {
-    const sel = Array.from(selected);
-    if (!sel.length) { alert("Pick at least one role."); return; }
-    const user = auth.currentUser;
-    if (!user) { alert("Please sign in."); return; }
-    try{
-      const res = await fetch(APPLY_FUNCTION_URL, {
+  // Preselect saved roles, clamp to 3
+  const saved = Array.isArray(profile.selectedTitleTags) ? profile.selectedTitleTags.slice(0,3) : [];
+  for (const opt of ui.rolePicker.options) {
+    opt.selected = saved.includes(opt.value);
+  }
+  renderChips(saved);
+  ensureApplyEnabled(saved);
+  updateMatchedCount(saved);
+
+  // On change, clamp & recompute
+  ui.rolePicker.addEventListener("change", () => {
+    const selected = Array.from(ui.rolePicker.selectedOptions).map(o => o.value);
+    const clamp = selected.slice(0,3);
+    // unselect extras visually
+    for (const opt of ui.rolePicker.options) {
+      if (!clamp.includes(opt.value)) opt.selected = false;
+    }
+    renderChips(clamp);
+    ensureApplyEnabled(clamp);
+    updateMatchedCount(clamp);
+  });
+
+  // Apply Now
+  ui.applyBtn.addEventListener("click", async () => {
+    const selected = Array.from(ui.rolePicker.selectedOptions).map(o => o.value).slice(0,3);
+    if (!CURRENT_UID || !selected.length) return;
+
+    try {
+      ui.applyBtn.disabled = true;
+      ui.applyBtn.textContent = "Applying…";
+
+      // persist selection (helps daily job run)
+      await set(ref(db, `/users/${CURRENT_UID}/selectedTitleTags`), selected);
+
+      const resp = await fetch(APPLY_FUNCTION_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ uid: user.uid, titleTags: sel })
+        body: JSON.stringify({ uid: CURRENT_UID, titleTags: selected })
       });
-      const data = await res.json();
-      alert(`Applied to ${data.attempted||0} jobs. You’ll receive a summary email.`);
-      await set(ref(db, `users/${user.uid}/selectedTitleTags`), sel);
-    }catch(e){ alert("Failed to apply. Check config."); }
-  };
-}
+      const out = await resp.json().catch(() => ({}));
+      const n = out?.attempted ?? 0;
 
-function row(name,n){ return `<div class="flex items-center justify-between rounded-lg border border-gray-100 p-3 mb-2"><div class="font-medium">${displayLabel(name)}</div><div class="text-sm text-gray-500">${format(n)} jobs</div></div>`; }
+      ui.applyBtn.textContent = "Applied!";
+      setTimeout(() => {
+        ui.applyBtn.textContent = "Apply Now";
+        ensureApplyEnabled(selected);
+      }, 1400);
 
-function loadAndRender(){
-  const jobRef = ref(db, JOBS_PATH);
-  onValue(jobRef, (snap) => {
-    const obj = snap.val() || {};
-    const all = Object.values(obj);
-    computeTitleTags(all);
-    renderChips();
-    const breakdown = document.getElementById("breakdown");
-    const arr = Array.from(totalsByTitleTag.entries())
-      .map(([name,count]) => ({ name, count }))
-      .sort((a,b)=> b.count - a.count).slice(0, 20);
-    breakdown.innerHTML = arr.map(x => row(x.name, x.count)).join("");
+      // Update matched count (it will likely be same as attempted)
+      setMatched(n);
+    } catch (e) {
+      console.error(e);
+      alert("Apply failed. Please try again.");
+      ui.applyBtn.textContent = "Apply Now";
+      ensureApplyEnabled(Array.from(ui.rolePicker.selectedOptions).map(o=>o.value));
+    }
   });
 }
 
-// Profile UI
-function fillProfile(info){
-  const img = document.getElementById("profImg");
-  const name = document.getElementById("profName");
-  const title = document.getElementById("profTitle");
-  const about = document.getElementById("profAbout");
-  const cv = document.getElementById("profCV");
-  img.src = info?.profileImageUrl || info?.photoURL || "";
-  name.textContent = info?.fullName || info?.name || "—";
-  title.textContent = info?.profession || info?.title || "—";
-  about.textContent = info?.about || "—";
-  cv.href = info?.userCV || info?.cvURL || "#";
+function updateMatchedCount(selectedRoles) {
+  const keys = selectedRoles.map(toLowerKey);
+  const wantedLower = keys; // already lower/normalized
+  let count = 0;
+  for (const [jobId, job] of Object.entries(ALL_JOBS)) {
+    if (matchesRole(job, wantedLower)) count++;
+  }
+  setMatched(count);
 }
-
-// Load legacy Users/info or new users/profile
-async function loadProfile(uid){
-  const snap1 = await get(child(ref(db), `Users/${uid}/info`));
-  if (snap1.exists()) return snap1.val();
-  const snap2 = await get(child(ref(db), `users/${uid}/profile`));
-  if (snap2.exists()) return snap2.val();
-  return null;
-}
-
-document.getElementById("btnSignOut").addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "./index.html";
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "./auth.html"; return; }
-  const p = await loadProfile(user.uid);
-  if (p) fillProfile(p);
-  loadAndRender();
-});
