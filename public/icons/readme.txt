@@ -1,0 +1,1 @@
+Host any email icons here so links stay on your domain.

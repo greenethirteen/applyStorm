@@ -1,0 +1,40 @@
+
+:root{
+  --brand-red:#fd2f4b;
+  --sun:#ffd166;
+  --mint:#06d6a0;
+  --sky:#5fb3ff;
+  --lav:#c79eff;
+  --rose:#ff7aa8;
+}
+html{ scroll-behavior: smooth; }
+.glow{ box-shadow: 0 10px 30px rgba(253,47,75,.25), 0 1px 0 rgba(253,47,75,.4) inset; }
+.card{ border:1px solid #f1f5f9; box-shadow:0 10px 30px rgba(2,6,23,.05); }
+.badge{ display:inline-flex; align-items:center; gap:.5rem; padding:.35rem .6rem; border-radius:999px; font-weight:600; font-size:.75rem; }
+.badge-yellow{ background:rgba(255,209,102,.18); color:#7a5c00; border:1px solid rgba(255,209,102,.5); }
+.badge-mint{ background:rgba(6,214,160,.15); color:#035d49; border:1px solid rgba(6,214,160,.45); }
+.badge-sky{ background:rgba(95,179,255,.16); color:#0d3b66; border:1px solid rgba(95,179,255,.45); }
+.badge-lav{ background:rgba(199,158,255,.16); color:#3c2a66; border:1px solid rgba(199,158,255,.45); }
+@keyframes floaty{ 0%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } 100%{ transform:translateY(0) } }
+@keyframes pop{ 0%{ transform:scale(.9); opacity:.0 } 60%{ transform:scale(1.03); opacity:1 } 100%{ transform:scale(1) } }
+@keyframes sparkle{ 0%{ transform:translateY(0) rotate(0) } 100%{ transform:translateY(60px) rotate(160deg); opacity:0 } }
+.reveal{ opacity:0; transform:translateY(16px); transition:opacity .5s ease, transform .5s ease; }
+.reveal.in{ opacity:1; transform:translateY(0); }
+.tilt:hover{ transform:rotate(-.6deg) translateY(-2px); transition:transform .2s ease; }
+.hero-blob{ position:absolute; border-radius:50%; filter:blur(40px); opacity:.16; animation: floaty 6s ease-in-out infinite; }
+.blob-red{ background:var(--brand-red); }
+.blob-sun{ background:var(--sun); }
+.blob-mint{ background:var(--mint); }
+.blob-sky{ background:var(--sky); }
+.blob-lav{ background:var(--lav); }
+.confetti{ position:fixed; top:-6px; width:8px; height:12px; opacity:0.9; animation:sparkle 900ms cubic-bezier(.17,.67,.83,.67) forwards; z-index:50; }
+.band-daily{ background: linear-gradient(90deg, rgba(253,47,75,0.08), rgba(95,179,255,0.08)); border: 1px solid rgba(253,47,75,.18); box-shadow: 0 10px 30px rgba(2,6,23,.05); }
+.pulse{ position: relative; }
+.pulse::after{ content:""; position:absolute; inset:-6px; border-radius:999px; animation: pulseAnim 2.2s ease-out infinite; box-shadow: 0 0 0 0 rgba(253,47,75,.35); }
+@keyframes pulseAnim{ 0%{ box-shadow:0 0 0 0 rgba(253,47,75,.35); } 70%{ box-shadow:0 0 0 12px rgba(253,47,75,0); } 100%{ box-shadow:0 0 0 0 rgba(253,47,75,0); } }
+.calendar-chip{ display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:12px; background:white; border:1px dashed #fecaca; }
+.calendar-emoji{ filter: drop-shadow(0 2px 6px rgba(2,6,23,.15)); }
+.dial{ width:120px;height:120px;border-radius:999px; background: conic-gradient(from 0deg, #fd2f4b, #ffd166, #06d6a0, #5fb3ff, #c79eff, #fd2f4b); animation: spin 7s linear infinite; filter: blur(.6px) saturate(1.05); opacity:.9; }
+.dial-inner{ width:88px;height:88px;border-radius:999px;background:white;border:2px solid #fee2e2; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.bg-grid { background-image: radial-gradient(circle, rgba(0,0,0,.04) 1px, transparent 1px); background-size: 16px 16px; }

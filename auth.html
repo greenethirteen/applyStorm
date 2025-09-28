@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign In — So Jobless BH</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="bg-white text-gray-900">
+  <div class="mx-auto max-w-4xl px-4 py-10">
+    <a href="./index.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+      ← Back
+    </a>
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section class="rounded-2xl border border-gray-100 p-6 card">
+        <h1 class="text-2xl font-extrabold tracking-tight">Sign Up</h1>
+        <p class="text-sm text-gray-600">Create an account and add your profile details.</p>
+        <div class="mt-4 grid gap-3">
+          <input id="suEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
+          <input id="suPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
+          <button id="btnSignUp" class="rounded-lg px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">Create account</button>
+        </div>
+      </section>
+      <section class="rounded-2xl border border-gray-100 p-6 card">
+        <h1 class="text-2xl font-extrabold tracking-tight">Sign In</h1>
+        <p class="text-sm text-gray-600">Welcome back.</p>
+        <div class="mt-4 grid gap-3">
+          <input id="siEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
+          <input id="siPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
+          <button id="btnSignIn" class="rounded-lg px-4 py-2 border">Sign in</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+    import { firebaseConfig } from "./firebaseConfig.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    document.getElementById("btnSignUp").addEventListener("click", async () => {
+      const email = document.getElementById("suEmail").value.trim();
+      const pass = document.getElementById("suPass").value;
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      const uid = cred.user.uid;
+      await set(ref(db, "Users/" + uid + "/info"), {
+        userId: uid, email, fullName: email.split("@")[0], profession: "", about: "", profileImageUrl: "", userCV: ""
+      });
+      await set(ref(db, "users/" + uid + "/profile"), {
+        userId: uid, email, name: email.split("@")[0], title: "", about: "", photoURL: "", cvURL: ""
+      });
+      window.location.href = "./app.html";
+    });
+
+    document.getElementById("btnSignIn").addEventListener("click", async () => {
+      const email = document.getElementById("siEmail").value.trim();
+      const pass = document.getElementById("siPass").value;
+      await signInWithEmailAndPassword(auth, email, pass);
+      window.location.href = "./app.html";
+    });
+  </script>
+</body>
+</html>

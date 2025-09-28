@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto‑Apply Dashboard — So Jobless BH</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="bg-white text-gray-900">
+  <header class="sticky top-0 z-30 border-b border-gray-100 bg-white/80 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl flex items-center justify-center text-white font-bold glow" style="background:#fd2f4b">SJ</div>
+        <div class="leading-tight">
+          <div class="font-extrabold tracking-tight text-lg text-[#fd2f4b]">So Jobless BH</div>
+          <div class="text-[11px] text-gray-500">Auto‑Apply</div>
+        </div>
+      </a>
+      <button id="btnSignOut" class="rounded-lg px-3 py-2 border">Sign out</button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2">
+      <div class="rounded-2xl border border-gray-100 card p-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-extrabold tracking-tight">Your Profile</h2>
+          <button id="btnEdit" class="text-sm border px-3 py-1.5 rounded-lg">Edit</button>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <img id="profImg" class="w-28 h-28 rounded-xl object-cover bg-gray-100" alt="Profile" />
+          <div class="md:col-span-2">
+            <div id="profName" class="font-bold text-lg">—</div>
+            <div id="profTitle" class="text-sm text-gray-600">—</div>
+            <div id="profAbout" class="text-sm text-gray-600 mt-1">—</div>
+            <div class="mt-2">
+              <a id="profCV" class="text-sm text-[#fd2f4b] underline" target="_blank">View CV</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-100 card p-5 mt-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-extrabold tracking-tight">Choose Your Role <span class="text-gray-400 text-sm">(max 3)</span></h2>
+          <div id="selectedLabel" class="text-sm text-gray-500">Selected: None</div>
+        </div>
+        <div id="chips" class="mt-4 flex flex-wrap gap-2"></div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-100 card p-5 mt-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-extrabold tracking-tight">Apply</h2>
+          <button id="btnApply" class="rounded-lg px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">Apply Now</button>
+        </div>
+        <div class="mt-3 text-xs text-gray-500">We’ll write application records for matching jobs and your existing email sender will contact employers.</div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="rounded-2xl border border-gray-100 card p-5">
+        <h3 class="text-lg font-bold">Jobs Overview</h3>
+        <div id="breakdown" class="mt-3"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

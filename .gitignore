@@ -1,0 +1,16 @@
+# Node / general
+node_modules/
+npm-debug.log*
+.DS_Store
+*.zip
+
+# Functions
+functions/node_modules/
+functions/.runtimeconfig.json
+
+# Firebase hosting cache
+.firebase/
+
+# Logs
+logs
+*.log

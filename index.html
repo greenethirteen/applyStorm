@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>So Jobless BH — Find It. Auto‑Apply. Get Hired.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="bg-white text-gray-900">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-gray-100 bg-white/80 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl flex items-center justify-center text-white font-bold glow" style="background:#fd2f4b">SJ</div>
+        <div class="leading-tight">
+          <div class="font-extrabold tracking-tight text-lg text-[#fd2f4b]">So Jobless BH</div>
+          <div class="text-[11px] text-gray-500">Jobs • Auto‑Apply • 🇧🇭 Bahrain</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#how" class="text-gray-600 hover:text-gray-900">How it works</a>
+        <a href="#features" class="text-gray-600 hover:text-gray-900">Features</a>
+        <a href="#faq" class="text-gray-600 hover:text-gray-900">FAQ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a id="dashboardLink" href="./app.html" class="hidden rounded-lg px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">Open Dashboard</a>
+        <a id="getStartedLink" href="./auth.html" class="rounded-lg px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">Sign Up</a>
+        <button id="signOutBtn" class="hidden rounded-lg px-3 py-2 border border-gray-200">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative">
+    <div class="hero-blob blob-red" style="width:220px;height:220px; left:-60px; top:-40px;"></div>
+    <div class="hero-blob blob-mint" style="width:180px;height:180px; right:6%; top:12%; animation-delay:1.2s"></div>
+    <div class="hero-blob blob-sun" style="width:160px;height:160px; right:20%; top:-8%; animation-delay:.4s"></div>
+
+    <div class="mx-auto max-w-7xl px-4 pt-8 pb-10 lg:pt-12 lg:pb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div>
+        <span class="badge badge-yellow">✨ New: AI role tagging & daily auto‑apply</span>
+        <h1 class="mt-2 text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] reveal">
+          Auto‑apply to <span id="jobsHeadline" class="text-[#fd2f4b]">1,300+</span> jobs in Bahrain <span aria-hidden="true">🇧🇭</span>.
+        </h1>
+        <p class="mt-3 text-gray-600 max-w-2xl text-lg reveal">
+          We scrape fresh vacancies every day and apply on your behalf—using your photo, title, intro, and CV—so you don’t miss opportunities.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3 reveal">
+          <a id="ctaStart" href="./auth.html" class="rounded-xl px-5 py-3 text-white font-semibold glow" style="background:#fd2f4b">Sign Up</a>
+          <a href="#how" class="rounded-xl px-5 py-3 border border-gray-200">How it Works</a>
+        </div>
+        <div class="mt-8 grid grid-cols-2 gap-4 max-w-lg reveal">
+          <div class="card rounded-xl p-4 bg-white tilt">
+            <div class="text-xs text-gray-500">Live Jobs</div>
+            <div class="mt-1 text-3xl font-extrabold text-[#fd2f4b]"><span id="jobsCount">—</span></div>
+            <div class="text-xs text-gray-500">Updated daily</div>
+          </div>
+          <div class="card rounded-xl p-4 bg-white tilt">
+            <div class="text-xs text-gray-500">Supported Roles</div>
+            <div class="mt-1 text-3xl font-extrabold text-[#fd2f4b]"><span id="rolesCount">—</span>+</div>
+            <div class="text-xs text-gray-500">AI‑tagged</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="relative reveal">
+        <!-- Daily band first -->
+        <div class="band-daily rounded-2xl p-4 lg:p-5 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="dial grid place-items-center" style="width:86px;height:86px;"><div class="dial-inner grid place-items-center" style="width:64px;height:64px;"><div class="text-[11px] font-extrabold text-[#fd2f4b]">AUTO</div></div></div>
+            <div>
+              <div class="text-lg font-extrabold tracking-tight">Daily Auto‑Apply</div>
+              <div class="text-xs text-gray-600">Runs at <span class="font-semibold">09:00</span> 🇧🇭 • <span class="px-2 py-0.5 rounded-full bg-red-50 text-[#fd2f4b] border border-red-100 text-[10px] font-bold pulse">ON</span></div>
+              <div class="mt-1 text-xs text-gray-600">Next: <span id="nextRun" class="font-semibold">09:00</span> • Yesterday <span id="appliedYesterday" class="font-semibold">—</span> • Total <span id="appliedTotal" class="font-semibold">—</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Storyboard -->
+        <div class="grid gap-4">
+          <div class="rounded-3xl p-5 lg:p-6 card bg-white tilt">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-bold text-[#fd2f4b]">One‑click Auto‑Apply</div>
+              <span class="badge badge-mint">No copy‑paste sprees 🪄</span>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-3">
+              <div class="rounded-2xl p-4 bg-gradient-to-br from-rose-50 to-red-50 border border-red-100">
+                <div class="text-2xl">🧑‍💼</div>
+                <div class="text-sm font-semibold mt-1">You</div>
+                <div class="text-xs text-gray-600">Face + intro + CV</div>
+              </div>
+              <div class="rounded-2xl p-4 bg-gradient-to-br from-yellow-50 to-amber-50 border border-amber-100">
+                <div class="text-2xl">🔍</div>
+                <div class="text-sm font-semibold mt-1">We match</div>
+                <div class="text-xs text-gray-600"><span id="jobsMini">1,300+</span> jobs scanned</div>
+              </div>
+              <div class="rounded-2xl p-4 bg-gradient-to-br from-sky-50 to-indigo-50 border border-indigo-100">
+                <div class="text-2xl">✉️</div>
+                <div class="text-sm font-semibold mt-1">We send</div>
+                <div class="text-xs text-gray-600">Polite, branded emails</div>
+              </div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-xl p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-emerald-100 text-sm">
+                <span class="font-semibold">Pick up to 3 roles</span><br />Barista, Driver, Sales Exec…
+              </div>
+              <div class="rounded-xl p-3 bg-gradient-to-r from-purple-50 to-violet-50 border border-violet-100 text-sm">
+                <span class="font-semibold">We keep at it</span><br />New jobs? We auto‑apply daily.
+              </div>
+            </div>
+            <a href="./auth.html" class="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">
+              Auto Apply to 100s of Jobs Now <span>→</span>
+            </a>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-2xl p-4 bg-white card tilt">
+              <div class="badge badge-sky">⚡ Fast</div>
+              <div class="mt-2 text-sm text-gray-700">Apply to dozens in seconds.</div>
+            </div>
+            <div class="rounded-2xl p-4 bg-white card tilt">
+              <div class="badge badge-lav">😊 Friendly</div>
+              <div class="mt-2 text-sm text-gray-700">Your vibe, our emails.</div>
+            </div>
+            <div class="rounded-2xl p-4 bg-white card tilt">
+              <div class="badge badge-mint">🗓️ Hands‑off</div>
+              <div class="mt-2 text-sm text-gray-700">Daily auto‑apply, done.</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
+    <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Why candidates choose <span class="text-[#fd2f4b]">So Jobless BH</span></h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm font-bold text-[#fd2f4b]">Smart matching</div>
+        <p class="mt-1 text-sm text-gray-600">AI tags your role from job titles & descriptions for precise targeting.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm font-bold text-[#fd2f4b]">Daily auto‑apply</div>
+        <p class="mt-1 text-sm text-gray-600">New postings are applied automatically every morning.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm font-bold text-[#fd2f4b]">Branded emails</div>
+        <p class="mt-1 text-sm text-gray-600">Centered layout with your photo, title, intro, and a CV button.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm font-bold text-[#fd2f4b]">Privacy first</div>
+        <p class="mt-1 text-sm text-gray-600">Keys stay server‑side. You control when auto‑apply is enabled.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how" class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
+    <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">How it works (no rocket science 🚀)</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-2xl p-5 card bg-white reveal tilt">
+        <div class="badge badge-yellow">Step 1</div>
+        <div class="mt-2 font-semibold">Add your details</div>
+        <p class="text-sm text-gray-600 mt-1">Photo, title, 2‑line intro & your CV. Yes, that’s it.</p>
+      </div>
+      <div class="rounded-2xl p-5 card bg-white reveal tilt">
+        <div class="badge badge-mint">Step 2</div>
+        <div class="mt-2 font-semibold">Pick up to 3 roles</div>
+        <p class="text-sm text-gray-600 mt-1">We’ll laser‑target those (and only those).</p>
+      </div>
+      <div class="rounded-2xl p-5 card bg-white reveal tilt">
+        <div class="badge badge-sky">Step 3</div>
+        <div class="mt-2 font-semibold">Click apply</div>
+        <p class="text-sm text-gray-600 mt-1">We contact every match, then auto‑apply daily.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
+    <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">FAQ</h2>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="card rounded-2xl p-5">
+        <div class="font-semibold">Will you apply to jobs I already applied for?</div>
+        <p class="mt-1 text-sm text-gray-600">No, we track unique jobs per user and only apply to new ones.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="font-semibold">Can I pause daily auto‑apply?</div>
+        <p class="mt-1 text-sm text-gray-600">Yes, toggle it off anytime from the Dashboard.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="font-semibold">Which roles are supported?</div>
+        <p class="mt-1 text-sm text-gray-600">Hospitality, Sales, Trades, Drivers, Admin, Tech, Engineering, Health, Education, Beauty & more — from Manama to Riffa to Muharraq.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="font-semibold">How are emails sent?</div>
+        <p class="mt-1 text-sm text-gray-600">Your existing Resend sender triggers on application records we create.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-10 text-center text-xs text-gray-400 border-t border-gray-100">
+    © <span id="year"></span> So Jobless BH — Auto‑Apply
+  </footer>
+
+  <!-- Firebase + dynamic counters -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js"></script>
+  <script type="module" src="./firebaseConfig.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+    import { firebaseConfig } from "./firebaseConfig.js";
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const dashboardLink = document.getElementById("dashboardLink");
+    const getStartedLink = document.getElementById("getStartedLink");
+    const signOutBtn = document.getElementById("signOutBtn");
+    onAuthStateChanged(auth, (user) => {
+      if (user) { dashboardLink.classList.remove("hidden"); signOutBtn.classList.remove("hidden"); getStartedLink.classList.add("hidden"); }
+      else { dashboardLink.classList.add("hidden"); signOutBtn.classList.add("hidden"); getStartedLink.classList.remove("hidden"); }
+    });
+    signOutBtn?.addEventListener("click", async () => { await signOut(auth); window.location.href = "./index.html"; });
+
+    // Live counters
+    const jobsHeadline = document.getElementById("jobsHeadline");
+    const jobsCount = document.getElementById("jobsCount");
+    const rolesCount = document.getElementById("rolesCount");
+    const jobsMini = document.getElementById("jobsMini");
+
+    function animateCount(el, target) {
+      const start = 0;
+      const duration = 1000;
+      const t0 = performance.now();
+      function frame(t) {
+        const p = Math.min(1, (t - t0) / duration);
+        const val = Math.floor(start + (target - start) * p);
+        el.textContent = new Intl.NumberFormat().format(val);
+        if (p < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    onValue(ref(db, "/expats_jobs"), (snap) => {
+      const obj = snap.val() || {};
+      const total = Array.isArray(obj) ? obj.length : Object.keys(obj).length;
+      const approx = Math.ceil(total / 100) * 100; // round up for headline
+      jobsHeadline.textContent = new Intl.NumberFormat().format(approx) + "+";
+      animateCount(jobsCount, total);
+      if (jobsMini) jobsMini.textContent = jobsHeadline.textContent;
+
+      const vals = Array.isArray(obj) ? obj : Object.values(obj);
+      const set = new Set();
+      for (const j of vals) {
+        if (j && j.ai && j.ai.titleTag) set.add(String(j.ai.titleTag).toLowerCase());
+      }
+      if (set.size === 0) {
+        for (const j of vals) {
+          const c = j?.jobCategory || j?.category || j?.mappedCategory;
+          if (c) set.add(String(c).toLowerCase());
+        }
+      }
+      rolesCount.textContent = String(Math.max(12, set.size));
+    }, () => {
+      jobsHeadline.textContent = "1,300+";
+      jobsCount.textContent = "—";
+      rolesCount.textContent = "12";
+    });
+
+    // Next 09:00 Bahrain (UTC+3)
+    function nextNineBahrain(){
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const bahrainNow = new Date(utc + 3*3600*1000);
+      const target = new Date(bahrainNow);
+      target.setHours(9,0,0,0);
+      if (bahrainNow >= target) target.setDate(target.getDate()+1);
+      const isTomorrow = bahrainNow.getDate() !== target.getDate();
+      const el = document.getElementById('nextRun');
+      if (el) el.textContent = "09:00" + (isTomorrow ? " (tomorrow)" : " (today)");
+    }
+    nextNineBahrain();
+
+    // Reveal-on-scroll
+    const io = new IntersectionObserver((entries)=>{
+      for(const e of entries){ if (e.isIntersecting) e.target.classList.add('in'); }
+    },{ threshold:.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Confetti on "Sign Up"
+    const cta = document.getElementById('ctaStart');
+    const colors = ['#fd2f4b','#ffd166','#06d6a0','#5fb3ff','#c79eff','#ff7aa8'];
+    function poof(x,y){
+      for (let i=0;i<18;i++){
+        const s = document.createElement('div');
+        s.className='confetti';
+        s.style.left = (x + (Math.random()*40-20)) + 'px';
+        s.style.top = (y + (Math.random()*10-5)) + 'px';
+        s.style.background = colors[Math.floor(Math.random()*colors.length)];
+        s.style.transform = 'translateY(0) rotate('+(Math.random()*40-20)+'deg)';
+        s.style.animationDelay = (Math.random()*120)+'ms';
+        document.body.appendChild(s);
+        setTimeout(()=>s.remove(), 1200);
+      }
+    }
+    cta?.addEventListener('click', (e)=>{
+      const r = e.currentTarget.getBoundingClientRect();
+      poof(r.left + r.width/2, r.top + window.scrollY);
+    });
+
+    // Public aggregates (optional)
+    onValue(ref(db, "/public/apply_stats"), (snap)=>{
+      const v = snap.val() || {};
+      const y = v.yesterday || 0;
+      const t = v.total || 0;
+      const fmt = (n)=> new Intl.NumberFormat().format(n);
+      const yEl = document.getElementById("appliedYesterday");
+      const tEl = document.getElementById("appliedTotal");
+      if (yEl) yEl.textContent = fmt(y);
+      if (tEl) tEl.textContent = fmt(t);
+    });
+  </script>
+</body>
+</html>
