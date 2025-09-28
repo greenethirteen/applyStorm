@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>So Jobless BH — Auto Apply Dashboard</title>
-  <!-- Tailwind (fine for now; can switch to compiled later) -->
+  <!-- Tailwind (CDN is fine for now; can switch to compiled build later) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -75,7 +75,8 @@
         <h2 class="text-lg font-extrabold mb-4">Pick up to 3 roles</h2>
 
         <div class="mb-3 text-sm text-neutral-600">
-          Choose roles like <em>Barista</em>, <em>Driver (Light)</em>, <em>Sales Executive</em>. We’ll email every matching job, and keep auto-applying daily.
+          Choose roles like <em>Barista</em>, <em>Driver (Light)</em>, <em>Sales Executive</em>.
+          We’ll email every matching job, and keep auto-applying daily.
         </div>
 
         <!-- Role selector -->
@@ -103,7 +104,7 @@
     </div>
   </main>
 
-  <!-- App script -->
-  <script type="module" src="./app.js"></script>
+  <!-- App script (cache-busted so prod always pulls the latest) -->
+  <script type="module" src="./app.js?v=2025-09-28a"></script>
 </body>
 </html>

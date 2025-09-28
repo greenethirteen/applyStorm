@@ -19,6 +19,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getDatabase();
 
+// Use absolute Cloud Run URLs for proxies (Railway doesn't have Firebase rewrites)
+const IMG_PROXY_BASE = "https://imgproxy-azu6eodsrq-uc.a.run.app";
+const CV_PROXY_BASE  = "https://cvproxy-azu6eodsrq-uc.a.run.app";
+
 // 1) Helpers
 const $ = (id) => document.getElementById(id);
 
@@ -136,7 +140,6 @@ function matchesRole(job, wantedLower) {
 function toLowerKey(r) {
   // Normalize role display → key used in REGEX_MAP / AI
   const s = r.trim().toLowerCase();
-  // normalize variants matching our keys
   return s
     .replace(/waiter\/waitress/, "waiter/waitress")
     .replace(/telesales\/call center agent/, "telesales/call center agent");
@@ -169,6 +172,7 @@ if (ui.categoriesPanel) ui.categoriesPanel.classList.add("opacity-0","pointer-ev
 
 onAuthStateChanged(auth, async (user) => {
   try {
+    console.log("Auth state changed; user:", user?.uid || null);
     if (!user) {
       window.location.href = "auth.html";
       return;
@@ -216,7 +220,7 @@ function renderProfile(p) {
   const pid = p.userId || p.uid;
   if (ui.profileImg) {
     if ((p.profileImageUrl || p.photoURL) && pid) {
-      ui.profileImg.src = `/i/${pid}`;
+      ui.profileImg.src = `${IMG_PROXY_BASE}/${pid}`;
       ui.profileImg.classList.remove("hidden");
     } else {
       ui.profileImg.classList.add("hidden");
@@ -224,7 +228,7 @@ function renderProfile(p) {
   }
   if (ui.profileCvLink) {
     if ((p.userCV || p.cvURL) && pid) {
-      ui.profileCvLink.href = `/cv/${pid}`;
+      ui.profileCvLink.href = `${CV_PROXY_BASE}/${pid}`;
       ui.profileCvLink.classList.remove("hidden");
     } else {
       ui.profileCvLink.classList.add("hidden");
@@ -290,7 +294,7 @@ function initRolesUI(profile) {
         ensureApplyEnabled(selected);
       }, 1400);
 
-      // Update matched count (it will likely be same as attempted)
+      // Update matched count (likely equals attempted)
       setMatched(n);
     } catch (e) {
       console.error(e);
@@ -303,7 +307,7 @@ function initRolesUI(profile) {
 
 function updateMatchedCount(selectedRoles) {
   const keys = selectedRoles.map(toLowerKey);
-  const wantedLower = keys; // already lower/normalized
+  const wantedLower = keys; // normalized
   let count = 0;
   for (const [jobId, job] of Object.entries(ALL_JOBS)) {
     if (matchesRole(job, wantedLower)) count++;
