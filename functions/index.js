@@ -14,7 +14,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
 
-// --- firebase-admin v12+ scoped imports (replaces `* as admin from "firebase-admin"`) ---
+// --- firebase-admin v12+ scoped imports ---
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
 
@@ -33,7 +33,7 @@ const OPENAI_MODEL   = defineSecret("OPENAI_MODEL");   // optional
 
 // --- Helpers ---------------------------------------------------------------
 const REGION = "us-central1";
-const wait = (ms) => new Promise(r => setTimeout(r, ms));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Extract emails in free text (very permissive)
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
@@ -59,8 +59,8 @@ function getContactEmails(job) {
       }
     }
   }
-  const uniq = Array.from(new Set(found.map(s => s.trim().toLowerCase())));
-  return uniq.filter(e => !e.endsWith("@example.com"));
+  const uniq = Array.from(new Set(found.map((s) => s.trim().toLowerCase())));
+  return uniq.filter((e) => !e.endsWith("@example.com"));
 }
 
 // Role taxonomy (lowercase keys)
@@ -134,7 +134,7 @@ function matchesRole(job, wantedLower) {
   const txt = textOfJob(job);
   for (const [k, regs] of Object.entries(REGEX_MAP)) {
     if (wantedLower.includes(k)) {
-      if (regs.some(r => r.test(txt))) return true;
+      if (regs.some((r) => r.test(txt))) return true;
     }
   }
   return false;
@@ -170,7 +170,7 @@ function firstTruthy(obj, keys) {
 
 // ---------------- Email Builders ----------------
 
-// Employer-facing application email (redesigned, red square button with soft radius)
+// Employer-facing application email (redesigned; red square button w/ soft radius)
 function appEmailHTML({ brandUrl, user, job }) {
   const primary = "#fd2f4b";
   const logoUrl = `${brandUrl || "https://sojobless.live"}/logo.png`;
@@ -259,10 +259,10 @@ async function sendWithResend({ apiKey, from, to, subject, html }) {
   const resp = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to, subject, html })
+    body: JSON.stringify({ from, to, subject, html }),
   });
   if (!resp.ok) {
     const t = await resp.text();
@@ -273,10 +273,10 @@ async function sendWithResend({ apiKey, from, to, subject, html }) {
 
 // --- shared core used by both applyNow & applyDaily ------------------------
 async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
-  const wantedLower = titleTags.map(s => String(s).trim().toLowerCase());
+  const wantedLower = titleTags.map((s) => String(s).trim().toLowerCase());
 
   const rec = await loadUserRecord(uid);
-  if (!rec) return { ok:false, attempted:0, error:"user profile not found" };
+  if (!rec) return { ok: false, attempted: 0, error: "user profile not found" };
   const user = rec.data.info ? rec.data.info : rec.data;
 
   const jobsSnap = await rtdb.ref("/expats_jobs").get();
@@ -312,21 +312,40 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
   if (userEmail && attempted > 0) {
     const subj = `Applied to ${attempted} job(s) — So Jobless BH`;
     const sumHtml = buildSummaryEmailHTML({ brandUrl, user, attempted, titleTags });
-    try { await sendWithResend({ apiKey, from, to: userEmail, subject: subj, html: sumHtml }); } catch {}
+    try {
+      await sendWithResend({ apiKey, from, to: userEmail, subject: subj, html: sumHtml });
+    } catch {}
   }
 
-  return { ok:true, attempted };
+  return { ok: true, attempted };
+}
+
+// --- CORS helper -----------------------------------------------------------
+function pickAllowOrigin(origin) {
+  // Base allow-list (exact matches)
+  const base = new Set([
+    "https://sojobless.live",
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "https://applystorm-production.up.railway.app",
+  ]);
+  // Allow any *.up.railway.app (previews)
+  let patternOk = false;
+  try {
+    const u = new URL(origin);
+    patternOk = u.hostname.endsWith(".up.railway.app");
+  } catch {}
+  return base.has(origin) || patternOk ? origin : "https://sojobless.live";
 }
 
 // --- HTTP: Apply Now -------------------------------------------------------
 export const applyNow = onRequest(
-  { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL, BRAND_BASE_URL] },
+  { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL, BRAND_BASE_URL], cors: true },
   async (req, res) => {
     // ---- CORS headers & preflight ----
     {
       const origin = req.headers.origin || "";
-      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
-      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      const allowOrigin = pickAllowOrigin(origin);
       res.setHeader("Access-Control-Allow-Origin", allowOrigin);
       res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -342,18 +361,18 @@ export const applyNow = onRequest(
       const body = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
       const { uid, titleTags } = body;
       if (!uid || !Array.isArray(titleTags) || titleTags.length === 0) {
-        return res.status(400).json({ ok:false, error:"uid and titleTags required" });
+        return res.status(400).json({ ok: false, error: "uid and titleTags required" });
       }
       const brandUrl = BRAND_BASE_URL.value() || "https://sojobless.live";
       const from = FROM_EMAIL.value() || "So Jobless BH <team@sojobless.live>";
       const apiKey = RESEND_API_KEY.value();
-      if (!apiKey) return res.status(500).json({ ok:false, error:"RESEND_API_KEY missing" });
+      if (!apiKey) return res.status(500).json({ ok: false, error: "RESEND_API_KEY missing" });
 
       const out = await processApply({ uid, titleTags, brandUrl, from, apiKey });
       return res.json(out);
     } catch (e) {
       console.error("applyNow error:", e);
-      return res.status(500).json({ ok:false, error:String(e.message || e) });
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
   }
 );
@@ -395,8 +414,8 @@ Description: ${description}
 Role:`;
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: [{ role:"user", content: prompt }], temperature: 0 })
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }], temperature: 0 }),
   });
   if (!resp.ok) return null;
   const j = await resp.json();
@@ -409,7 +428,7 @@ export const aiCategorizeNow = onRequest(
   async (_req, res) => {
     try {
       const jobsSnap = await rtdb.ref("/expats_jobs").limitToFirst(200).get();
-      if (!jobsSnap.exists()) return res.json({ ok:true, updated: 0 });
+      if (!jobsSnap.exists()) return res.json({ ok: true, updated: 0 });
       const updates = [];
       for (const [jobId, job] of Object.entries(jobsSnap.val())) {
         if (aiTag(job)) continue;
@@ -420,10 +439,10 @@ export const aiCategorizeNow = onRequest(
         }
       }
       await Promise.allSettled(updates);
-      res.json({ ok:true, updated: updates.length });
+      res.json({ ok: true, updated: updates.length });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ ok:false, error:String(e.message || e) });
+      res.status(500).json({ ok: false, error: String(e.message || e) });
     }
   }
 );
@@ -446,7 +465,7 @@ export const aiCategorizeDaily = onSchedule(
 
 // --- Robust image & CV proxies --------------------------------------------
 function getUidFromReq(req) {
-  const fromPath = (req.path || "").replace(/\/+$/,'').split("/").filter(Boolean).pop();
+  const fromPath = (req.path || "").replace(/\/+$/, "").split("/").filter(Boolean).pop();
   return req.query.uid || fromPath || null;
 }
 
@@ -461,7 +480,7 @@ export const imgProxy = onRequest({ region: REGION, cors: true }, async (req, re
     const imgUrl = firstTruthy(rec.data, [
       "info.profileImageUrl",
       "profileImageUrl",
-      "photoURL"
+      "photoURL",
     ]);
     if (!imgUrl) return res.status(404).send("No profile image");
 
@@ -489,11 +508,7 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
     const rec = await loadUserRecord(uid);
     if (!rec) return res.status(404).send("User not found");
 
-    const cvUrl = firstTruthy(rec.data, [
-      "info.userCV",
-      "userCV",
-      "cvURL"
-    ]);
+    const cvUrl = firstTruthy(rec.data, ["info.userCV", "userCV", "cvURL"]);
     if (!cvUrl) return res.status(404).send("No CV URL");
 
     const upstream = await fetch(cvUrl);
@@ -514,13 +529,12 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
 
 // --- Optional passthrough email endpoint -----------------------------------
 export const sendApplicationEmailHttp = onRequest(
-  { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL] },
+  { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL], cors: true },
   async (req, res) => {
-    // Optional CORS if calling from browser
+    // ---- CORS headers & preflight ----
     {
       const origin = req.headers.origin || "";
-      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
-      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      const allowOrigin = pickAllowOrigin(origin);
       res.setHeader("Access-Control-Allow-Origin", allowOrigin);
       res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -531,15 +545,17 @@ export const sendApplicationEmailHttp = onRequest(
 
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
-      const { to, subject, html } = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
-      if (!to || !subject || !html) return res.status(400).json({ ok:false, error:"to, subject, html required" });
+      const { to, subject, html } =
+        typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
+      if (!to || !subject || !html)
+        return res.status(400).json({ ok: false, error: "to, subject, html required" });
       const from = FROM_EMAIL.value() || "So Jobless BH <team@sojobless.live>";
       const apiKey = RESEND_API_KEY.value();
       const out = await sendWithResend({ apiKey, from, to, subject, html });
-      res.json({ ok:true, id: out.id || null });
+      res.json({ ok: true, id: out.id || null });
     } catch (e) {
       console.error("sendApplicationEmail error:", e);
-      res.status(500).json({ ok:false, error:String(e.message || e) });
+      res.status(500).json({ ok: false, error: String(e.message || e) });
     }
   }
 );
