@@ -1,3 +1,176 @@
+
+/**
+ * ---------- So Jobless BH — Auto-Apply Email Template ----------
+ * renderAutoApplyEmail(props) -> returns a fully inlined HTML email.
+ * Props:
+ *  - jobsCount, candidateName, profileImageUrl, todayDate, year
+ *  - dashboardUrl, preferencesUrl, notificationsUrl, helpUrl, brandLogoUrl
+ *  - topJobs: [{ title, company, location }]
+ */
+function sjb_escapeHtml(str='') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function sjb_renderTopJobs(topJobs) {
+  if (!Array.isArray(topJobs) || topJobs.length === 0) return '';
+  const items = topJobs.slice(0, 3).map(j => {
+    const title = sjb_escapeHtml(j.title || '');
+    const company = sjb_escapeHtml(j.company || '');
+    const location = sjb_escapeHtml(j.location || '');
+    return `<div style="font-family: Arial, Helvetica, sans-serif; font-size:14px; color:#222; margin:6px 0;">
+      <strong>${title}</strong> at ${company} <span style="color:#9b9b9b;">(${location})</span>
+    </div>`;
+  }).join('');
+  return `
+  <tr>
+    <td style="padding:12px 4px 0 4px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#ffffff;">
+        <tr>
+          <td style="padding:8px 12px; border:1px solid #f6f6f6; border-radius:10px;">
+            <div style="font-family: Arial, Helvetica, sans-serif; font-size:13px; color:#777; margin:0 0 8px 0;">
+              Today’s highlights:
+            </div>
+            ${items}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+function renderAutoApplyEmail(props={}) {
+  const {
+    jobsCount = 0,
+    candidateName = 'Candidate Name',
+    profileImageUrl = 'https://i.pravatar.cc/192?img=5',
+    todayDate = '',
+    year = new Date().getFullYear(),
+    dashboardUrl = '#',
+    preferencesUrl = '#',
+    notificationsUrl = '#',
+    helpUrl = '#',
+    brandLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/3/3f/TransparentPlaceholder.png',
+    topJobs = []
+  } = props;
+  const preheader = `Your ApplyStorm update: ${jobsCount} application(s) sent today.`;
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Auto-Apply Summary</title>
+  <style>
+    /* For preview only */
+    body { background:#ffffff; }
+    a:hover { opacity: .9; }
+  </style>
+</head>
+<body style="margin:0; padding:0; background:#ffffff;">
+  <!-- Preheader (hidden) -->
+  <div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden;">
+    ${sjb_escapeHtml(preheader)}
+  </div>
+  <center style="width:100%; background:#ffffff;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#ffffff;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <!-- Container -->
+          <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; width:100%; background:#ffffff;">
+            <!-- Brand Bar -->
+            <tr>
+              <td style="padding:4px 8px 0 8px;">
+                <table role="presentation" width="100%">
+                  <tr>
+                    <td align="left">
+                      <img src="${sjb_escapeHtml(brandLogoUrl)}" width="28" height="28" alt="So Jobless BH" style="display:block; border:0; background:#fd2f4b; border-radius:6px;" />
+                    </td>
+                    <td align="right" style="font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#9b9b9b;">
+                      ${sjb_escapeHtml(todayDate)}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Card -->
+            <tr>
+              <td style="padding:20px 16px 16px 16px; border:1px solid #f1f1f1; border-radius:12px; background:#ffffff; text-align:center;">
+                <h1 style="margin:0 0 6px 0; font-family: Arial, Helvetica, sans-serif; font-size:22px; line-height:30px; color:#111111; font-weight:700;">
+                  Total Jobs We Applied for You Today
+                </h1>
+                <p style="margin:0 0 16px 0; font-family: Arial, Helvetica, sans-serif; font-size:14px; line-height:20px; color:#6b6b6b;">
+                  Powered by <strong>So Jobless BH ApplyStorm</strong>
+                </p>
+                <div style="margin:6px 0 18px 0; font-family: Arial, Helvetica, sans-serif; font-size:56px; line-height:64px; color:#fd2f4b; font-weight:800; letter-spacing:-0.5px;">
+                  ${sjb_escapeHtml(String(jobsCount))}
+                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 14px 0;">
+                  <tr>
+                    <td align="center">
+                      <img src="${sjb_escapeHtml(profileImageUrl)}" width="96" height="96" alt="${sjb_escapeHtml(candidateName)}"
+                           style="display:block; border-radius:50%; border:1px solid #eeeeee; object-fit:cover;" />
+                      <div style="font-family: Arial, Helvetica, sans-serif; font-size:16px; line-height:22px; color:#111111; font-weight:700; margin-top:8px;">
+                        ${sjb_escapeHtml(candidateName)}
+                      </div>
+                      <div style="font-family: Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; color:#6b6b6b; margin-top:2px;">
+                        Great news—applications went out today. We’ll watch for replies.
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 10px 0; font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:22px; color:#2b2b2b;">
+                  We will keep <strong>auto-applying for matching jobs every day</strong> as they arrive—so you can focus on prepping for interviews.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px 0 6px 0;">
+                  <tr>
+                    <td>
+                      <a href="${sjb_escapeHtml(dashboardUrl)}"
+                         style="background:#111111; color:#ffffff; text-decoration:none; display:inline-block; padding:12px 18px; border-radius:8px; font-family: Arial, Helvetica, sans-serif; font-size:14px; font-weight:700;">
+                        View Today’s Applications
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:6px 0 0 0; font-family: Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#7a7a7a;">
+                  Opens your dashboard filtered to today’s applications.
+                </p>
+                <p style="margin:8px 0 0 0; font-family: Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#7a7a7a; text-align:center;">
+                  Want to fine-tune matches? <a href="${sjb_escapeHtml(preferencesUrl)}" style="color:#fd2f4b; text-decoration:none;">Update your preferences</a>.
+                </p>
+                <p style="margin:4px 0 0 0; font-family: Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#9a9a9a; text-align:center;">
+                  Choose roles, locations, salary range, and how often we apply.
+                </p>
+              </td>
+            </tr>
+            ${sjb_renderTopJobs(topJobs)}
+            <tr>
+              <td align="center" style="padding:18px 8px 0 8px;">
+                <p style="margin:0; font-family: Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#9b9b9b;">
+                  You’re receiving this because ApplyStorm is enabled on your So Jobless BH account.
+                  <a href="${sjb_escapeHtml(notificationsUrl)}" style="color:#9b9b9b; text-decoration:underline;">Manage notifications</a> •
+                  <a href="${sjb_escapeHtml(helpUrl)}" style="color:#9b9b9b; text-decoration:underline;">Help</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:10px 8px 30px 8px;">
+                <p style="margin:0; font-family: Arial, Helvetica, sans-serif; font-size:11px; line-height:16px; color:#b9b9b9;">
+                  © ${sjb_escapeHtml(String(year))} So Jobless BH • Manama, Bahrain
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </center>
+</body>
+</html>`;
+}
+
 /**
  * Cloud Functions for So Jobless BH — Auto Apply
  * Node.js 20 / Firebase Functions v2 (https)
@@ -310,8 +483,29 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
   // summary to the user
   const userEmail = user.email || user.contactEmail || null;
   if (userEmail && attempted > 0) {
-    const subj = `Applied to ${attempted} job(s) — So Jobless BH`;
-    const sumHtml = buildSummaryEmailHTML({ brandUrl, user, attempted, titleTags });
+    const subj = `Today’s So Jobless BH Auto-Apply Summary`;
+    const candidateName = (user.fullName || user.name || '').toString();
+    const profileImageUrl = user.photoURL || user.profileImageUrl || '';
+    const todayDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const year = new Date().getFullYear();
+    const dashboardUrl = `${(brandUrl || 'https://sojobless.live')}/dashboard?filter=today&uid=${uid}`;
+    const preferencesUrl = `${(brandUrl || 'https://sojobless.live')}/preferences`;
+    const notificationsUrl = `${(brandUrl || 'https://sojobless.live')}/notifications`;
+    const helpUrl = `${(brandUrl || 'https://sojobless.live')}/help`;
+    const brandLogoUrl = `${(brandUrl || 'https://sojobless.live')}/logo.png`;
+    const sumHtml = renderAutoApplyEmail({
+      jobsCount: attempted,
+      candidateName,
+      profileImageUrl,
+      todayDate,
+      year,
+      dashboardUrl,
+      preferencesUrl,
+      notificationsUrl,
+      helpUrl,
+      brandLogoUrl,
+      topJobs: []
+    });
     try {
       await sendWithResend({ apiKey, from, to: userEmail, subject: subj, html: sumHtml });
     } catch {}
@@ -545,13 +739,18 @@ export const sendApplicationEmailHttp = onRequest(
 
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
-      const { to, subject, html } =
-        typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
-      if (!to || !subject || !html)
+      const { to, subject, html, jobsCount, candidateName, profileImageUrl, todayDate, year,
+        dashboardUrl, preferencesUrl, notificationsUrl, helpUrl, brandLogoUrl,
+        topJobs } = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}');
+      if (!to || !subject)
         return res.status(400).json({ ok: false, error: "to, subject, html required" });
       const from = FROM_EMAIL.value() || "So Jobless BH <team@sojobless.live>";
       const apiKey = RESEND_API_KEY.value();
-      const out = await sendWithResend({ apiKey, from, to, subject, html });
+      const finalHtml = html || renderAutoApplyEmail({
+        jobsCount, candidateName, profileImageUrl, todayDate, year,
+        dashboardUrl, preferencesUrl, notificationsUrl, helpUrl, brandLogoUrl, topJobs
+      });
+      const out = await sendWithResend({ apiKey, from, to, subject, html: finalHtml });
       res.json({ ok: true, id: out.id || null });
     } catch (e) {
       console.error("sendApplicationEmail error:", e);
