@@ -7,7 +7,7 @@
  *  - applyDaily: scheduled daily auto-apply for all opted-in users
  *  - aiCategorizeNow / aiCategorizeDaily: optional role tagging
  *  - imgProxy / cvProxy: robust proxies for profile image & CV
- *  - sendApplicationEmail: passthrough to Resend (optional)
+ *  - sendApplicationEmailHttp: passthrough to Resend (optional)
  */
 
 import { onRequest } from "firebase-functions/v2/https";
@@ -41,7 +41,8 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
 function getContactEmails(job) {
   const fields = [
     job.email, job.contactEmail, job.applyEmail, job.companyEmail,
-    job.contact, job.hrEmail, job.hrContact, job.recruiterEmail
+    job.contact, job.hrEmail, job.hrContact, job.recruiterEmail,
+    job.description, job.jobDescription
   ].filter(Boolean);
 
   let found = [];
@@ -57,14 +58,6 @@ function getContactEmails(job) {
         }
       }
     }
-  }
-  if (typeof job.description === "string") {
-    const m = job.description.match(EMAIL_RE);
-    if (m) found.push(...m);
-  }
-  if (typeof job.jobDescription === "string") {
-    const m = job.jobDescription.match(EMAIL_RE);
-    if (m) found.push(...m);
   }
   const uniq = Array.from(new Set(found.map(s => s.trim().toLowerCase())));
   return uniq.filter(e => !e.endsWith("@example.com"));
@@ -147,20 +140,21 @@ function matchesRole(job, wantedLower) {
   return false;
 }
 
-// Find a user's profile across several known paths / key names
+// --- User loading (lowercase `/users` only; case-sensitive keys) -----------
 async function loadUserRecord(uid) {
-  const candidates = [
-    `/Users/${uid}/info`,
-    `/users/${uid}/info`,
-    `/users/${uid}/profile`,
-    `/users/${uid}`
-  ];
-  for (const p of candidates) {
+  // Prefer `/users/{uid}/info`, fallback to `/users/{uid}`
+  const paths = [`/users/${uid}/info`, `/users/${uid}`];
+  for (const p of paths) {
     const snap = await rtdb.ref(p).get();
-    if (snap.exists()) return { data: snap.val(), path: p };
+    if (snap.exists()) {
+      const val = snap.val();
+      if (p.endsWith("/info")) return { data: { info: val }, path: p };
+      return { data: val, path: p };
+    }
   }
   return null;
 }
+
 function firstTruthy(obj, keys) {
   for (const k of keys) {
     const parts = k.split(".");
@@ -267,7 +261,7 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
 
   const rec = await loadUserRecord(uid);
   if (!rec) return { ok:false, attempted:0, error:"user profile not found" };
-  const user = rec.data.info ? rec.data.info : rec.data.profile ? rec.data.profile : rec.data;
+  const user = rec.data.info ? rec.data.info : rec.data;
 
   const jobsSnap = await rtdb.ref("/expats_jobs").get();
   const jobs = jobsSnap.exists() ? jobsSnap.val() : {};
@@ -319,6 +313,21 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
 export const applyNow = onRequest(
   { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL, BRAND_BASE_URL] },
   async (req, res) => {
+    // ---- CORS headers & preflight ----
+    {
+      const origin = req.headers.origin || "";
+      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
+      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Max-Age", "3600");
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+    }
+
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
       const body = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
@@ -349,12 +358,11 @@ export const applyDaily = onSchedule(
     const apiKey = RESEND_API_KEY.value();
     if (!apiKey) return;
 
-    // Support both /users and /Users roots
-    let users = {};
-    for (const root of ["/users", "/Users"]) {
-      const snap = await rtdb.ref(root).get();
-      if (snap.exists()) Object.assign(users, snap.val());
-    }
+    // ONLY lowercase `/users`
+    const snap = await rtdb.ref("/users").get();
+    if (!snap.exists()) return;
+    const users = snap.val();
+
     for (const [uid, u] of Object.entries(users)) {
       const tags = u.selectedTitleTags;
       if (!Array.isArray(tags) || tags.length === 0) continue;
@@ -442,12 +450,9 @@ export const imgProxy = onRequest({ region: REGION, cors: true }, async (req, re
     if (!rec) return res.status(404).send("User not found");
 
     const imgUrl = firstTruthy(rec.data, [
-      "profileImageUrl",
-      "photoURL",
       "info.profileImageUrl",
-      "info.photoURL",
-      "profile.profileImageUrl",
-      "profile.photoURL"
+      "profileImageUrl",
+      "photoURL"
     ]);
     if (!imgUrl) return res.status(404).send("No profile image");
 
@@ -476,12 +481,9 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
     if (!rec) return res.status(404).send("User not found");
 
     const cvUrl = firstTruthy(rec.data, [
-      "userCV",
-      "cvURL",
       "info.userCV",
-      "info.cvURL",
-      "profile.userCV",
-      "profile.cvURL"
+      "userCV",
+      "cvURL"
     ]);
     if (!cvUrl) return res.status(404).send("No CV URL");
 
@@ -505,6 +507,19 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
 export const sendApplicationEmailHttp = onRequest(
   { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL] },
   async (req, res) => {
+    // Optional CORS if calling from browser
+    {
+      const origin = req.headers.origin || "";
+      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
+      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Max-Age", "3600");
+      if (req.method === "OPTIONS") return res.status(204).send("");
+    }
+
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
       const { to, subject, html } = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
