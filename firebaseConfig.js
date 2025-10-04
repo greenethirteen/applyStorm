@@ -7,9 +7,8 @@ export const firebaseConfig = {
   storageBucket: "sojoblessbh-d7b54.appspot.com",
   messagingSenderId: "311686819102",
   appId: "1:311686819102:web:0ec739345041ada49e6d0f",
-  measurementId: "G-WXTLVBK989" // optional
+  measurementId: "G-WXTLVBK989"
 };
 
-// v2 Functions print Cloud Run URLs (a.run.app). Use the one from your deploy:
 export const APPLY_FUNCTION_URL =
-  "https://applynow-azu6eodsrq-uc.a.run.app";
+  "https://us-central1-sojoblessbh-d7b54.cloudfunctions.net/applyNow";

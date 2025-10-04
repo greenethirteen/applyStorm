@@ -7,7 +7,7 @@
  *  - applyDaily: scheduled daily auto-apply for all opted-in users
  *  - aiCategorizeNow / aiCategorizeDaily: optional role tagging
  *  - imgProxy / cvProxy: robust proxies for profile image & CV
- *  - sendApplicationEmail: passthrough to Resend (optional)
+ *  - sendApplicationEmailHttp: passthrough to Resend (optional)
  */
 
 import { onRequest } from "firebase-functions/v2/https";
@@ -41,7 +41,8 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
 function getContactEmails(job) {
   const fields = [
     job.email, job.contactEmail, job.applyEmail, job.companyEmail,
-    job.contact, job.hrEmail, job.hrContact, job.recruiterEmail
+    job.contact, job.hrEmail, job.hrContact, job.recruiterEmail,
+    job.description, job.jobDescription
   ].filter(Boolean);
 
   let found = [];
@@ -57,14 +58,6 @@ function getContactEmails(job) {
         }
       }
     }
-  }
-  if (typeof job.description === "string") {
-    const m = job.description.match(EMAIL_RE);
-    if (m) found.push(...m);
-  }
-  if (typeof job.jobDescription === "string") {
-    const m = job.jobDescription.match(EMAIL_RE);
-    if (m) found.push(...m);
   }
   const uniq = Array.from(new Set(found.map(s => s.trim().toLowerCase())));
   return uniq.filter(e => !e.endsWith("@example.com"));
@@ -147,20 +140,21 @@ function matchesRole(job, wantedLower) {
   return false;
 }
 
-// Find a user's profile across several known paths / key names
+// --- User loading (lowercase `/users` only; case-sensitive keys) -----------
 async function loadUserRecord(uid) {
-  const candidates = [
-    `/Users/${uid}/info`,
-    `/users/${uid}/info`,
-    `/users/${uid}/profile`,
-    `/users/${uid}`
-  ];
-  for (const p of candidates) {
+  // Prefer `/users/{uid}/info`, fallback to `/users/{uid}`
+  const paths = [`/users/${uid}/info`, `/users/${uid}`];
+  for (const p of paths) {
     const snap = await rtdb.ref(p).get();
-    if (snap.exists()) return { data: snap.val(), path: p };
+    if (snap.exists()) {
+      const val = snap.val();
+      if (p.endsWith("/info")) return { data: { info: val }, path: p };
+      return { data: val, path: p };
+    }
   }
   return null;
 }
+
 function firstTruthy(obj, keys) {
   for (const k of keys) {
     const parts = k.split(".");
@@ -174,77 +168,93 @@ function firstTruthy(obj, keys) {
   return undefined;
 }
 
-// Build application email HTML
+// ---------------- Email Builders ----------------
+
+// Employer-facing application email (redesigned, red square button with soft radius)
 function appEmailHTML({ brandUrl, user, job }) {
+  const primary = "#fd2f4b";
+  const logoUrl = `${brandUrl || "https://sojobless.live"}/logo.png`;
+
   const profileImg = user.profileImageUrl || user.photoURL || "";
   const cvUrl = user.userCV || user.cvURL || "#";
+
   const safe = (s) => (s || "").toString().replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
+  const userName = safe(user.fullName || user.name || "Candidate");
+  const userTitle = safe(user.profession || user.title || "");
+  const userDesc  = safe(user.about || "");
+  const roleTitle = safe(job.jobTitle || job.title || "Position");
+
   return `
-  <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="background:#f7f7f8;padding:24px 0;font-family:Inter,Segoe UI,Arial,sans-serif;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="background:#fff;border-radius:16px;border:1px solid #eee;overflow:hidden">
-          <tr>
-            <td style="padding:20px 24px;border-bottom:1px solid #eee;background:#fff">
-              <table width="100%"><tr>
-                <td align="left">
-                  <span style="display:inline-flex;align-items:center;gap:10px">
-                    <span style="width:36px;height:36px;border-radius:10px;background:#fd2f4b;display:inline-grid;place-items:center;color:#fff;font-weight:800">SJ</span>
-                    <span style="font-weight:800;color:#fd2f4b">So Jobless BH</span>
-                  </span>
-                </td>
-              </tr></table>
-            </td>
-          </tr>
-
-          <tr><td style="padding:28px 24px">
-            <h1 style="margin:0 0 8px 0;font-size:20px;line-height:28px">Application for: ${safe(job.jobTitle || job.title || "Position")}</h1>
-            <p style="margin:0 0 16px 0;color:#555">Dear Hiring Team,</p>
-            <p style="margin:0 0 16px 0;color:#555">
-              I’d like to apply for the <strong>${safe(job.jobTitle || job.title || "role")}</strong> at ${safe(job.company || job.companyName || "")}.
-              Below are my details. I’d be grateful for the opportunity to interview.
-            </p>
-
-            <table width="100%" cellspacing="0" cellpadding="0" style="margin:12px 0 16px 0">
-              <tr>
-                <td width="72" valign="top">
-                  ${profileImg ? `<img src="${profileImg}" width="64" height="64" style="border-radius:12px;object-fit:cover;border:1px solid #eee" />` : ""}
-                </td>
-                <td valign="top" style="font-size:14px;color:#111">
-                  <div style="font-weight:800">${safe(user.fullName || user.name || "")}</div>
-                  <div style="color:#666;margin-top:2px">${safe(user.profession || user.title || "")}</div>
-                  <div style="color:#444;margin-top:8px">${safe(user.about || "")}</div>
-                </td>
-              </tr>
-            </table>
-
-            ${cvUrl && cvUrl !== "#" ? `
-              <div style="margin:12px 0 6px 0">
-                <a href="${cvUrl}" style="background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:600" target="_blank">
-                  View CV
-                </a>
-              </div>
-              <div style="font-size:12px;color:#888;margin-top:4px">If the button doesn’t work, paste this in your browser:<br>${cvUrl}</div>
-            ` : ""}
-          </td></tr>
-
-          <tr>
-            <td style="padding:16px 24px;border-top:1px solid #eee;color:#888;font-size:12px">
-              Sent via <strong>So Jobless BH</strong> — we match jobseekers with 1,300+ live jobs in Bahrain.
-              <div style="margin-top:6px">
-                <a href="${brandUrl}" style="color:#888;text-decoration:underline" target="_blank">${brandUrl}</a>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-  `;
+  <div style="font-family:'Inter', Arial, sans-serif; background:#f8fafc; padding:36px 0 12px 0; text-align:center;">
+    <div style="margin-bottom:20px;">
+      <img src="${logoUrl}" alt="So Jobless BH" style="height:48px;width:auto;display:inline-block;">
+    </div>
+    <div style="background:#fff; border-radius:18px; box-shadow:0 4px 22px ${primary}16; max-width:440px; margin:0 auto; padding:44px 28px 34px 28px;">
+      ${profileImg ? `<img src="${profileImg}" style="width:100px;height:100px;border-radius:50%;margin-bottom:18px;box-shadow:0 1px 6px ${primary}19;object-fit:cover;">` : ""}
+      <h2 style="margin:0 0 16px 0;font-size:1.6rem;font-weight:900;color:#111;letter-spacing:0.01em;">Application for: <span style="color:${primary};">${roleTitle}</span></h2>
+      <h1 style="margin:10px 0 4px 0;font-size:2.1rem;font-weight:900;color:${primary};letter-spacing:0.01em;">${userName}</h1>
+      ${userTitle ? `<div style="font-size:1.2rem;font-weight:700;color:#222;margin-bottom:8px;">${userTitle}</div>` : ""}
+      ${userDesc ? `<div style="color:#444;font-size:1.06rem;line-height:1.6;margin:0 auto 26px auto;max-width:320px;">${userDesc}</div>` : ""}
+      ${cvUrl && cvUrl !== "#" ? `<a href="${cvUrl}" style="display:inline-block;background:${primary};color:#fff;font-weight:700;padding:13px 28px;font-size:1.12rem;border-radius:8px;text-decoration:none;margin-bottom:12px;box-shadow:0 2px 10px ${primary}33;transition:background 0.17s;" target="_blank" rel="noopener">View CV</a>` : ""}
+    </div>
+    <div style="margin-top:36px;color:#999;font-size:0.99rem;">
+      <div style="margin-bottom:7px;letter-spacing:0.04em;">This notification was sent by <span style="color:${primary};font-weight:700;">So Jobless BH</span></div>
+      <div>
+        <span style="margin:0 7px 0 0;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" style="height:16px;width:16px;vertical-align:middle;margin-right:2px;"> 
+          <a href="https://instagram.com/sojobless.bh" style="color:${primary};text-decoration:none;">sojobless.bh</a>
+        </span>|
+        <span style="margin:0 7px;">
+          <img src="https://cdn-icons-png.flaticon.com/512/3917/3917132.png" alt="Website" style="height:16px;width:16px;vertical-align:middle;margin-right:2px;">
+          <a href="https://www.sojobless.live" style="color:${primary};text-decoration:none;">www.sojobless.live</a>
+        </span>|
+        <span style="margin:0 0 0 7px;">
+          <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email" style="height:16px;width:16px;vertical-align:middle;margin-right:2px;">
+          <a href="mailto:hello@sojobless.live" style="color:${primary};text-decoration:none;">hello@sojobless.live</a>
+        </span>
+      </div>
+    </div>
+  </div>`;
 }
 
-// Send an email through Resend
+// Candidate-facing daily/instant summary email
+function buildSummaryEmailHTML({ brandUrl, user, attempted, titleTags }) {
+  const primary = "#fd2f4b";
+  const logoUrl = `${brandUrl || "https://sojobless.live"}/logo.png`;
+  const safe = (s) => (s || "").toString().replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const name = safe(user.fullName || user.name || "");
+
+  return `
+  <div style="font-family:'Inter',Arial,sans-serif;background:#f8fafc;padding:36px 0 12px 0;text-align:center;">
+    <div style="margin-bottom:16px;">
+      <img src="${logoUrl}" alt="So Jobless BH" style="height:40px;width:auto;display:inline-block;">
+    </div>
+    <div style="background:#fff;border-radius:18px;box-shadow:0 4px 22px ${primary}16;max-width:560px;margin:0 auto;padding:28px 28px 24px;">
+      <div style="font-size:0.95rem;color:#666;margin-bottom:8px;">Auto-Apply Summary</div>
+      <div style="font-size:2.2rem;font-weight:900;color:${primary};line-height:1;margin-bottom:10px;">
+        ${attempted}
+      </div>
+      <div style="font-size:1rem;color:#111;margin-bottom:14px;">
+        job${attempted === 1 ? "" : "s"} applied for you today${name ? `, ${name}` : ""}.
+      </div>
+      ${Array.isArray(titleTags) && titleTags.length
+        ? `<div style="font-size:0.95rem;color:#444;margin:0 auto 4px;max-width:420px;">
+             Roles targeted: <strong>${titleTags.map(safe).join(", ")}</strong>
+           </div>`
+        : ""
+      }
+      <div style="font-size:0.88rem;color:#888;margin-top:8px;">
+        We’ll keep matching and applying as new jobs arrive.
+      </div>
+    </div>
+    <div style="margin-top:24px;color:#999;font-size:0.92rem;">
+      Sent by <span style="color:${primary};font-weight:700;">So Jobless BH</span> · <a href="${brandUrl || "https://sojobless.live"}" style="color:${primary};text-decoration:none;">sojobless.live</a>
+    </div>
+  </div>`;
+}
+
+// ---------------- Mail sender ----------------
 async function sendWithResend({ apiKey, from, to, subject, html }) {
   const resp = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -267,7 +277,7 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
 
   const rec = await loadUserRecord(uid);
   if (!rec) return { ok:false, attempted:0, error:"user profile not found" };
-  const user = rec.data.info ? rec.data.info : rec.data.profile ? rec.data.profile : rec.data;
+  const user = rec.data.info ? rec.data.info : rec.data;
 
   const jobsSnap = await rtdb.ref("/expats_jobs").get();
   const jobs = jobsSnap.exists() ? jobsSnap.val() : {};
@@ -301,14 +311,7 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
   const userEmail = user.email || user.contactEmail || null;
   if (userEmail && attempted > 0) {
     const subj = `Applied to ${attempted} job(s) — So Jobless BH`;
-    const sumHtml = `
-      <div style="font-family:Inter,Arial,sans-serif">
-        <p>Hi ${user.fullName || user.name || ""},</p>
-        <p>We just applied to <strong>${attempted}</strong> job(s) on your behalf.</p>
-        <p>Selected roles: ${titleTags.join(", ")}</p>
-        <p>We'll keep auto-applying daily as new matches arrive.</p>
-        <p style="color:#888">So Jobless BH</p>
-      </div>`;
+    const sumHtml = buildSummaryEmailHTML({ brandUrl, user, attempted, titleTags });
     try { await sendWithResend({ apiKey, from, to: userEmail, subject: subj, html: sumHtml }); } catch {}
   }
 
@@ -319,6 +322,21 @@ async function processApply({ uid, titleTags, brandUrl, from, apiKey }) {
 export const applyNow = onRequest(
   { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL, BRAND_BASE_URL] },
   async (req, res) => {
+    // ---- CORS headers & preflight ----
+    {
+      const origin = req.headers.origin || "";
+      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
+      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Max-Age", "3600");
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+    }
+
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
       const body = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
@@ -349,12 +367,11 @@ export const applyDaily = onSchedule(
     const apiKey = RESEND_API_KEY.value();
     if (!apiKey) return;
 
-    // Support both /users and /Users roots
-    let users = {};
-    for (const root of ["/users", "/Users"]) {
-      const snap = await rtdb.ref(root).get();
-      if (snap.exists()) Object.assign(users, snap.val());
-    }
+    // ONLY lowercase `/users`
+    const snap = await rtdb.ref("/users").get();
+    if (!snap.exists()) return;
+    const users = snap.val();
+
     for (const [uid, u] of Object.entries(users)) {
       const tags = u.selectedTitleTags;
       if (!Array.isArray(tags) || tags.length === 0) continue;
@@ -442,12 +459,9 @@ export const imgProxy = onRequest({ region: REGION, cors: true }, async (req, re
     if (!rec) return res.status(404).send("User not found");
 
     const imgUrl = firstTruthy(rec.data, [
-      "profileImageUrl",
-      "photoURL",
       "info.profileImageUrl",
-      "info.photoURL",
-      "profile.profileImageUrl",
-      "profile.photoURL"
+      "profileImageUrl",
+      "photoURL"
     ]);
     if (!imgUrl) return res.status(404).send("No profile image");
 
@@ -476,12 +490,9 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
     if (!rec) return res.status(404).send("User not found");
 
     const cvUrl = firstTruthy(rec.data, [
-      "userCV",
-      "cvURL",
       "info.userCV",
-      "info.cvURL",
-      "profile.userCV",
-      "profile.cvURL"
+      "userCV",
+      "cvURL"
     ]);
     if (!cvUrl) return res.status(404).send("No CV URL");
 
@@ -505,6 +516,19 @@ export const cvProxy = onRequest({ region: REGION, cors: true }, async (req, res
 export const sendApplicationEmailHttp = onRequest(
   { region: REGION, secrets: [RESEND_API_KEY, FROM_EMAIL] },
   async (req, res) => {
+    // Optional CORS if calling from browser
+    {
+      const origin = req.headers.origin || "";
+      const allowed = ["https://sojobless.live", "http://localhost:8080", "http://localhost:3000"];
+      const allowOrigin = allowed.includes(origin) ? origin : allowed[0];
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Max-Age", "3600");
+      if (req.method === "OPTIONS") return res.status(204).send("");
+    }
+
     try {
       if (req.method !== "POST") return res.status(405).send("Use POST");
       const { to, subject, html } = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
