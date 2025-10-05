@@ -52,6 +52,10 @@
                  class="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-neutral-300 text-sm">
                 Edit profile
               </a>
+              <button id="signOutBtnProfile"
+                 class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-[--brand] text-white text-sm font-semibold">
+                Sign out
+              </button>
             </div>
           </div>
         </div>
@@ -106,5 +110,17 @@
 
   <!-- App script (cache-busted so prod always pulls the latest) -->
   <script type="module" src="./app.js?v=2025-09-28b"></script>
+
+  <!-- Helper: reuse header sign-out handler -->
+  <script>
+    (function(){
+      var btn = document.getElementById('signOutBtnProfile');
+      if (btn) btn.addEventListener('click', function(){
+        var headerBtn = document.getElementById('signOutBtn');
+        if (headerBtn) headerBtn.click();
+      });
+    })();
+  </script>
+
 </body>
 </html>
