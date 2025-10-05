@@ -3,65 +3,231 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sign In — So Jobless BH</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="./styles.css" />
+  <title>Auth — So Jobless BH</title>
+<link rel="stylesheet" href="./styles.css" />
+  <style>
+    .flip-container { perspective: 1200px; }
+    .flipper {
+      position: relative; transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
+      min-height: 540px;
+    }
+    .flipped .flipper { transform: rotateY(180deg); }
+    .flip-face { position: absolute; inset: 0; backface-visibility: hidden; }
+    .flip-back { transform: rotateY(180deg); }
+    .btn-primary { background:#fd2f4b; color:#fff; }
+    .btn-dark { background:#111827; color:#fff; }
+    .disabled { opacity:.6; pointer-events:none; }
+  </style>
+  <link rel="stylesheet" href="./app.css" />
 </head>
 <body class="bg-white text-gray-900">
   <div class="mx-auto max-w-4xl px-4 py-10">
-    <a href="./index.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
-      ← Back
-    </a>
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <section class="rounded-2xl border border-gray-100 p-6 card">
-        <h1 class="text-2xl font-extrabold tracking-tight">Sign Up</h1>
-        <p class="text-sm text-gray-600">Create an account and add your profile details.</p>
-        <div class="mt-4 grid gap-3">
-          <input id="suEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
-          <input id="suPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
-          <button id="btnSignUp" class="rounded-lg px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">Create account</button>
-        </div>
-      </section>
-      <section class="rounded-2xl border border-gray-100 p-6 card">
-        <h1 class="text-2xl font-extrabold tracking-tight">Sign In</h1>
-        <p class="text-sm text-gray-600">Welcome back.</p>
-        <div class="mt-4 grid gap-3">
-          <input id="siEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
-          <input id="siPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
-          <button id="btnSignIn" class="rounded-lg px-4 py-2 border">Sign in</button>
-        </div>
-      </section>
+    <a href="./index.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">← Back</a>
+
+    <div class="mt-6 flex items-center justify-between">
+      <h1 class="text-2xl font-extrabold tracking-tight">Welcome</h1>
+      <div class="flex gap-2">
+        <button id="showSignUp" class="px-4 py-2 rounded-lg btn-primary">Sign Up</button>
+        <button id="showSignIn" class="px-4 py-2 rounded-lg btn-dark">Sign In</button>
+      </div>
+    </div>
+
+    <div id="flipWrap" class="flip-container mt-6">
+      <div class="flipper">
+
+        <!-- SIGN UP (Front) -->
+        <section class="flip-face flip-front rounded-2xl border border-gray-100 p-6 card bg-white">
+          <h2 class="text-xl font-bold">Create Account</h2>
+          <p class="text-sm text-gray-600">All fields are required.</p>
+
+          <div id="suAlert" class="hidden mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"></div>
+          <div id="suSuccess" class="hidden mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"></div>
+
+          <div class="mt-4 grid gap-3">
+            <input id="suEmail" type="email" placeholder="Email" class="border rounded-lg p-3" required />
+            <input id="suPass" type="password" placeholder="Password (min 6 chars)" class="border rounded-lg p-3" required />
+
+            <input id="suFullName" type="text" placeholder="Full name" class="border rounded-lg p-3" required />
+            <input id="suProfession" type="text" placeholder="Profession (e.g., Sales Associate)" class="border rounded-lg p-3" required />
+            <textarea id="suAbout" placeholder="About you (short bio)" class="border rounded-lg p-3" rows="3" required></textarea>
+
+            <div class="grid gap-1">
+              <label class="text-sm text-gray-700">Profile Photo (JPG/PNG)</label>
+              <input id="suPhotoFile" type="file" accept="image/*" class="border rounded-lg p-3" required />
+              <div id="photoProg" class="hidden text-xs text-gray-600"></div>
+            </div>
+
+            <div class="grid gap-1">
+              <label class="text-sm text-gray-700">CV (PDF)</label>
+              <input id="suCVFile" type="file" accept="application/pdf" class="border rounded-lg p-3" required />
+              <div id="cvProg" class="hidden text-xs text-gray-600"></div>
+            </div>
+
+            <button id="btnSignUp" class="rounded-lg px-4 py-3 font-semibold btn-primary">Create account</button>
+          </div>
+        </section>
+
+        <!-- SIGN IN (Back) -->
+        <section class="flip-face flip-back rounded-2xl border border-gray-100 p-6 card bg-white">
+          <h2 class="text-xl font-bold">Sign In</h2>
+          <p class="text-sm text-gray-600">Welcome back.</p>
+
+          <div id="siAlert" class="hidden mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"></div>
+
+          <div class="mt-4 grid gap-3">
+            <input id="siEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
+            <input id="siPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
+            <button id="btnSignIn" class="rounded-lg px-4 py-3 font-semibold btn-dark">Sign in</button>
+          </div>
+        </section>
+
+      </div>
     </div>
   </div>
 
+  <!-- Firebase Auth + RTDB + Storage -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+    import { getDatabase, ref as dbRef, set } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+    import { getStorage, ref as stRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js";
     import { firebaseConfig } from "./firebaseConfig.js";
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+    const storage = getStorage(app);
 
-    document.getElementById("btnSignUp").addEventListener("click", async () => {
-      const email = document.getElementById("suEmail").value.trim();
-      const pass = document.getElementById("suPass").value;
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      const uid = cred.user.uid;
-      await set(ref(db, "Users/" + uid + "/info"), {
-        userId: uid, email, fullName: email.split("@")[0], profession: "", about: "", profileImageUrl: "", userCV: ""
+    // --- UI helpers ---
+    const el = (id) => document.getElementById(id);
+    const show = (id, msg) => { const n = el(id); n.textContent = msg; n.classList.remove("hidden"); };
+    const hide = (id) => el(id).classList.add("hidden");
+    const setBusy = (btn, busy, labelBusy, labelIdle) => {
+      btn.classList.toggle("disabled", busy);
+      btn.disabled = busy;
+      btn.textContent = busy ? labelBusy : labelIdle;
+    };
+
+    // Flip controls
+    const flipWrap = el("flipWrap");
+    el("showSignUp").addEventListener("click", () => flipWrap.classList.remove("flipped"));
+    el("showSignIn").addEventListener("click", () => flipWrap.classList.add("flipped"));
+
+    // Validation
+    function validateSignUp() {
+      hide("suAlert"); hide("suSuccess");
+      const email = el("suEmail").value.trim();
+      const pass  = el("suPass").value;
+      const fullName   = el("suFullName").value.trim();
+      const profession = el("suProfession").value.trim();
+      const about      = el("suAbout").value.trim();
+      const photoFile  = el("suPhotoFile").files[0];
+      const cvFile     = el("suCVFile").files[0];
+
+      if (!email || !pass || !fullName || !profession || !about || !photoFile || !cvFile) {
+        show("suAlert", "Please complete all fields and attach both files.");
+        return null;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        show("suAlert", "Enter a valid email address.");
+        return null;
+      }
+      if (pass.length < 6) {
+        show("suAlert", "Password must be at least 6 characters.");
+        return null;
+      }
+      if (!photoFile.type.startsWith("image/")) {
+        show("suAlert", "Profile photo must be an image file.");
+        return null;
+      }
+      if (cvFile.type !== "application/pdf") {
+        show("suAlert", "CV must be a PDF file.");
+        return null;
+      }
+      return { email, pass, fullName, profession, about, photoFile, cvFile };
+    }
+
+    // Upload with progress
+    function uploadWithProgress(file, path, progElId) {
+      const ref = stRef(storage, path);
+      const task = uploadBytesResumable(ref, file);
+      const progEl = el(progElId);
+      progEl.classList.remove("hidden");
+      return new Promise((resolve, reject) => {
+        task.on("state_changed", (snap) => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          progEl.textContent = `Uploading ${file.name}… ${pct}%`;
+        }, reject, async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          progEl.textContent = `Uploaded ${file.name} ✓`;
+          resolve(url);
+        });
       });
-      await set(ref(db, "users/" + uid + "/profile"), {
-        userId: uid, email, name: email.split("@")[0], title: "", about: "", photoURL: "", cvURL: ""
-      });
-      window.location.href = "./app.html";
+    }
+
+    // Sign Up
+    el("btnSignUp").addEventListener("click", async () => {
+      try {
+        const data = validateSignUp();
+        if (!data) return;
+
+        setBusy(el("btnSignUp"), true, "Creating…", "Create account");
+        const { email, pass, fullName, profession, about, photoFile, cvFile } = data;
+
+        // 1) Auth
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const uid = cred.user.uid;
+
+        // 2) Upload files to Storage (paths match your style)
+        const photoPath = `images/${crypto.randomUUID?.() || Date.now()}_${uid}`;
+        const cvPath    = `resumes/${crypto.randomUUID?.() || Date.now()}_${uid}.pdf`;
+
+        const [profileImageUrl, userCV] = await Promise.all([
+          uploadWithProgress(photoFile, photoPath, "photoProg"),
+          uploadWithProgress(cvFile, cvPath, "cvProg"),
+        ]);
+
+        // 3) Write to /users/{uid}/info with EXACT field names found in your RTDB export
+        await set(dbRef(db, `users/${uid}/info`), {
+          userId: uid,
+          email,
+          fullName,
+          profession,
+          about,
+          profileImageUrl,   // uploaded image URL
+          userCV,            // uploaded CV URL
+          role: "candidate", // default per your data
+          status: "live",    // default per your data
+          phone: "unknown"   // default seen in many records
+        });
+
+        show("suSuccess", "Account created successfully!");
+        window.location.href = "./app.html";
+      } catch (e) {
+        console.error(e);
+        show("suAlert", e?.message || "Could not create account.");
+      } finally {
+        setBusy(el("btnSignUp"), false, "Creating…", "Create account");
+      }
     });
 
-    document.getElementById("btnSignIn").addEventListener("click", async () => {
-      const email = document.getElementById("siEmail").value.trim();
-      const pass = document.getElementById("siPass").value;
-      await signInWithEmailAndPassword(auth, email, pass);
-      window.location.href = "./app.html";
+    // Sign In
+    el("btnSignIn").addEventListener("click", async () => {
+      try {
+        hide("siAlert");
+        const email = el("siEmail").value.trim();
+        const pass  = el("siPass").value;
+        if (!email || !pass) {
+          show("siAlert", "Enter your email and password.");
+          return;
+        }
+        await signInWithEmailAndPassword(auth, email, pass);
+        window.location.href = "./app.html";
+      } catch (e) {
+        console.error(e);
+        show("siAlert", e?.message || "Sign-in failed.");
+      }
     });
   </script>
 </body>
