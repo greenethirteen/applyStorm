@@ -253,6 +253,48 @@ async function loadAllJobs() {
 
 // 4) Roles UI
 function initRolesUI(profile) {
+  // Build clickable grid
+  function renderRoleGrid(selected){
+    const grid = document.getElementById('roleGrid');
+    if (!grid) return;
+    const chosen = new Set(selected || []);
+    grid.innerHTML = ROLE_OPTIONS.map(name => {
+      const isOn = chosen.has(name);
+      const base = "role-pill inline-flex items-center justify-between gap-2 text-sm px-3 py-2 rounded-xl border transition shadow-sm";
+      const on  = "bg-red-50 text-red-700 border-red-200";
+      const off = "bg-white text-neutral-700 border-neutral-200 hover:border-neutral-300";
+      return `<button type="button" data-role="${name}" class="${base} ${isOn?on:off}">
+                <span>${name}</span>
+                <span class="text-xs ${isOn?'':'opacity-0'}">✓</span>
+              </button>`;
+    }).join("");
+    // Click handling
+    grid.querySelectorAll("button[data-role]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const name = btn.getAttribute("data-role");
+        const current = Array.from(ui.rolePicker.selectedOptions).map(o=>o.value);
+        const set = new Set(current);
+        if (set.has(name)) set.delete(name); else set.add(name);
+        // clamp to 3 by trimming last-added if over
+        if (set.size > 3) {
+          // remove the oldest by converting to array and slicing
+          const arr = Array.from(set);
+          arr.splice(0, arr.length-3);
+          set.clear(); arr.forEach(v=>set.add(v));
+        }
+        // sync to hidden select
+        for (const opt of ui.rolePicker.options) {
+          opt.selected = set.has(opt.value);
+        }
+        const values = Array.from(set);
+        renderChips(values);
+        ensureApplyEnabled(values);
+        updateMatchedCount(values);
+        renderRoleGrid(values); // re-render to reflect states
+      });
+    });
+  }
+
   // Populate multi-select with Role Options
   ui.rolePicker.innerHTML = ROLE_OPTIONS.map(r => `<option value="${r}">${r}</option>`).join("");
 
@@ -262,6 +304,7 @@ function initRolesUI(profile) {
     opt.selected = saved.includes(opt.value);
   }
   renderChips(saved);
+  renderRoleGrid(saved);
   ensureApplyEnabled(saved);
   updateMatchedCount(saved);
 
@@ -274,6 +317,7 @@ function initRolesUI(profile) {
       if (!clamp.includes(opt.value)) opt.selected = false;
     }
     renderChips(clamp);
+    renderRoleGrid(clamp);
     ensureApplyEnabled(clamp);
     updateMatchedCount(clamp);
   });
@@ -323,3 +367,75 @@ function updateMatchedCount(selectedRoles) {
   }
   setMatched(count);
 }
+
+
+// ===== AUTO_APPLY_TOGGLE =====
+import { onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+(function(){
+  const statusPill = document.getElementById('autoStatusPill');
+  const toggleBtn  = document.getElementById('autoToggleBtn');
+  const nextRunEl  = document.getElementById('nextRunText');
+
+  if (!statusPill || !toggleBtn) return;
+
+  function setPill(enabled){
+    if (enabled){
+      statusPill.textContent = 'ON';
+      statusPill.className = 'px-2 py-0.5 rounded-full border text-[10px] font-bold bg-red-50 text-red-700 border-red-200';
+      toggleBtn.textContent = 'Pause';
+      toggleBtn.className = 'px-3 py-2 rounded-lg bg-neutral-900 text-white text-sm font-semibold';
+    }else{
+      statusPill.textContent = 'PAUSED';
+      statusPill.className = 'px-2 py-0.5 rounded-full border text-[10px] font-bold bg-neutral-50 text-neutral-700 border-neutral-300';
+      toggleBtn.textContent = 'Resume';
+      toggleBtn.className = 'px-3 py-2 rounded-lg bg-[--brand] text-white text-sm font-semibold';
+    }
+  }
+
+  function nextNineBahrain(){
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const bahrainNow = new Date(utc + 3*3600*1000);
+    const target = new Date(bahrainNow);
+    target.setHours(9,0,0,0);
+    if (bahrainNow >= target) target.setDate(target.getDate()+1);
+    const isTomorrow = bahrainNow.getDate() != target.getDate();
+    const hh = String(target.getHours()).padStart(2,'0');
+    const mm = String(target.getMinutes()).padStart(2,'0');
+    return hh + ':' + mm + (isTomorrow ? ' (tomorrow)' : ' (today)');
+  }
+
+  function renderNextRun(){
+    if (nextRunEl) nextRunEl.textContent = nextNineBahrain();
+  }
+  renderNextRun();
+  setInterval(renderNextRun, 60_000);
+
+  onAuthStateChanged(auth, (user)=>{
+    if (!user) return;
+    const sRef = ref(db, `users/${user.uid}/settings`);
+    // Keep UI in sync
+    onValue(sRef, (snap)=>{
+      const v = snap.val() || {};
+      const enabled = v.autoApplyEnabled !== false; // default true
+      setPill(enabled);
+    });
+
+    let pending = false;
+    toggleBtn.addEventListener('click', async ()=>{
+      if (pending) return;
+      pending = true;
+      toggleBtn.disabled = true;
+      try {
+        const curSnap = await get(sRef);
+        const v = curSnap.val() || {};
+        const next = !(v.autoApplyEnabled !== false);
+        await update(sRef, { autoApplyEnabled: next, updatedAt: Date.now() });
+      } finally {
+        toggleBtn.disabled = false;
+        pending = false;
+      }
+    });
+  });
+})();

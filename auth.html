@@ -4,89 +4,281 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Auth — So Jobless BH</title>
-<link rel="stylesheet" href="./styles.css" />
-  <style>
-    .flip-container { perspective: 1200px; }
-    .flipper {
-      position: relative; transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
-      min-height: 540px;
-    }
-    .flipped .flipper { transform: rotateY(180deg); }
-    .flip-face { position: absolute; inset: 0; backface-visibility: hidden; }
-    .flip-back { transform: rotateY(180deg); }
-    .btn-primary { background:#fd2f4b; color:#fff; }
-    .btn-dark { background:#111827; color:#fff; }
-    .disabled { opacity:.6; pointer-events:none; }
-  </style>
+
+  <!-- Base styles you already use -->
+  <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./app.css" />
+
+  <style>
+    /* ===== Clean + Creative Redesign (no flips) ===== */
+
+    /* Utility */
+    .hidden { display: none !important; }
+
+    /* Page */
+    body { background: #fff; color: #111827; }
+
+    /* Subtle gradient header band */
+    .band {
+      background: radial-gradient(1200px 400px at 10% -20%, #ffd1d1 0%, rgba(255,209,209,0) 40%),
+                  radial-gradient(900px 380px at 90% -30%, #ffeab2 0%, rgba(255,234,178,0) 45%),
+                  radial-gradient(800px 300px at 40% -40%, #d2f5ea 0%, rgba(210,245,234,0) 35%);
+    }
+
+    /* Card shell */
+    .shell {
+      border: 1px solid #f1f5f9;
+      border-radius: 20px;
+      background: #ffffffcc;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(16, 24, 40, 0.06);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: inline-flex;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #eef2f7;
+    }
+    .tab {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: #fff;
+      color: #111827;
+      border-color: #e5e7eb;
+      box-shadow: 0 1px 0 rgba(0,0,0,.02) inset;
+    }
+
+    /* Inputs */
+    .field {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: box-shadow .2s ease, border-color .2s ease;
+      background: #fff;
+    }
+    .field:focus { border-color: #fd2f4b; box-shadow: 0 0 0 4px rgba(253,47,75,.12); }
+
+    /* Buttons */
+    .btn {
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background:#fd2f4b; color:#fff; }
+    .btn-primary:hover { filter: brightness(0.97); }
+    .btn-ghost { background:#fff; color:#111827; border-color:#e5e7eb; }
+    .btn-ghost:hover { background:#f8fafc; }
+
+    .disabled { opacity:.6; pointer-events:none; }
+
+    /* Alerts */
+    .alert { border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+    .alert-err { border:1px solid #fecaca; background:#fee2e2; color:#7f1d1d; }
+    .alert-ok  { border:1px solid #bbf7d0; background:#dcfce7; color:#14532d; }
+
+    /* Small helpers */
+    .muted { color:#64748b; font-size:12px; }
+    .hint  { color:#475569; font-size:12px; }
+    .stack { display:grid; gap:12px; }
+    .stack-lg { display:grid; gap:16px; }
+    .row { display:flex; gap:12px; }
+
+    /* HyperApply logo (text-based) */
+    .hyper-logo{display:inline-flex;align-items:baseline;gap:.25rem;line-height:1;}
+    .hyper-word{
+      font-weight:900;
+      font-size:clamp(46px,12vw,88px);
+      letter-spacing:-0.02em;
+      background:linear-gradient(90deg,#fd2f4b,#ff9a5a,#ffd166,#06d6a0,#5fb3ff,#c79eff,#fd2f4b);
+      background-size:400% 100%;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      filter:drop-shadow(0 5px 14px rgba(253,47,75,.15));
+      animation:hyper-sheen 7s linear infinite,hyper-pop .7s ease-out both;
+    }
+    .hyper-tm{
+      font-weight:800;
+      font-size:clamp(16px,3.2vw,22px);
+      vertical-align:super;
+      color:#fd2f4b;
+    }
+    .logo-sub {
+      font-weight: 700;
+      font-size: 13px;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-chip {
+      display:inline-grid; place-items:center;
+      width:26px; height:26px; border-radius:8px;
+      background:#fd2f4b; color:#fff; font-weight:900;
+      box-shadow: 0 8px 20px rgba(253,47,75,.25);
+      transform: rotate(-6deg);
+    }
+
+    @keyframes hyper-sheen{0%{background-position:0% 0%}100%{background-position:100% 0%}}
+    @keyframes hyper-pop{
+      0%{transform:translateY(10px) scale(.92);opacity:0}
+      60%{transform:translateY(0) scale(1.035);opacity:1}
+      100%{transform:translateY(0) scale(1)}
+    }
+
+    /* File drop areas */
+    .drop {
+      border:1.5px dashed #e5e7eb;
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+    }
+    .drop:hover { border-color:#fd2f4b; background:#fff7f8; }
+    .progress { font-size:12px; color:#475569; }
+
+    /* Two-column on md+ */
+    @media (min-width: 960px) {
+      .grid-auth { display:grid; grid-template-columns: 1.1fr .9fr; gap: 22px; }
+      .only-mobile { display:none; }
+    }
+  </style>
 </head>
-<body class="bg-white text-gray-900">
-  <div class="mx-auto max-w-4xl px-4 py-10">
-    <a href="./index.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">← Back</a>
+<body>
 
-    <div class="mt-6 flex items-center justify-between">
-      <h1 class="text-2xl font-extrabold tracking-tight">Welcome</h1>
-      <div class="flex gap-2">
-        <button id="showSignUp" class="px-4 py-2 rounded-lg btn-primary">Sign Up</button>
-        <button id="showSignIn" class="px-4 py-2 rounded-lg btn-dark">Sign In</button>
-      </div>
-    </div>
+  <!-- Top band with back link -->
+  <div class="band">
+    <div class="mx-auto max-w-5xl px-4 py-6 flex items-center justify-between">
+      <a href="./index.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">← Back to Home</a>
 
-    <div id="flipWrap" class="flip-container mt-6">
-      <div class="flipper">
-
-        <!-- SIGN UP (Front) -->
-        <section class="flip-face flip-front rounded-2xl border border-gray-100 p-6 card bg-white">
-          <h2 class="text-xl font-bold">Create Account</h2>
-          <p class="text-sm text-gray-600">All fields are required.</p>
-
-          <div id="suAlert" class="hidden mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"></div>
-          <div id="suSuccess" class="hidden mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"></div>
-
-          <div class="mt-4 grid gap-3">
-            <input id="suEmail" type="email" placeholder="Email" class="border rounded-lg p-3" required />
-            <input id="suPass" type="password" placeholder="Password (min 6 chars)" class="border rounded-lg p-3" required />
-
-            <input id="suFullName" type="text" placeholder="Full name" class="border rounded-lg p-3" required />
-            <input id="suProfession" type="text" placeholder="Profession (e.g., Sales Associate)" class="border rounded-lg p-3" required />
-            <textarea id="suAbout" placeholder="About you (short bio)" class="border rounded-lg p-3" rows="3" required></textarea>
-
-            <div class="grid gap-1">
-              <label class="text-sm text-gray-700">Profile Photo (JPG/PNG)</label>
-              <input id="suPhotoFile" type="file" accept="image/*" class="border rounded-lg p-3" required />
-              <div id="photoProg" class="hidden text-xs text-gray-600"></div>
-            </div>
-
-            <div class="grid gap-1">
-              <label class="text-sm text-gray-700">CV (PDF)</label>
-              <input id="suCVFile" type="file" accept="application/pdf" class="border rounded-lg p-3" required />
-              <div id="cvProg" class="hidden text-xs text-gray-600"></div>
-            </div>
-
-            <button id="btnSignUp" class="rounded-lg px-4 py-3 font-semibold btn-primary">Create account</button>
-          </div>
-        </section>
-
-        <!-- SIGN IN (Back) -->
-        <section class="flip-face flip-back rounded-2xl border border-gray-100 p-6 card bg-white">
-          <h2 class="text-xl font-bold">Sign In</h2>
-          <p class="text-sm text-gray-600">Welcome back.</p>
-
-          <div id="siAlert" class="hidden mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"></div>
-
-          <div class="mt-4 grid gap-3">
-            <input id="siEmail" type="email" placeholder="Email" class="border rounded-lg p-3" />
-            <input id="siPass" type="password" placeholder="Password" class="border rounded-lg p-3" />
-            <button id="btnSignIn" class="rounded-lg px-4 py-3 font-semibold btn-dark">Sign in</button>
-          </div>
-        </section>
-
+      <!-- Simple tabs -->
+      <div class="tabs">
+        <button id="showSignIn" class="tab active">Sign In</button>
+        <button id="showSignUp" class="tab">Create Account</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase Auth + RTDB + Storage -->
+  <!-- Main -->
+  <main class="mx-auto max-w-5xl px-4 py-8 grid-auth">
+    <!-- Left: Brand + copy -->
+    <section class="shell p-6 md:p-8">
+      <div class="hyper-logo" aria-label="HyperApply logo">
+        <span class="hyper-word">RapidApply</span><span class="hyper-tm">™</span>
+      </div>
+      <div class="logo-sub">
+        <span class="logo-chip">SJ</span>
+        Auto-apply engine by <span class="text-[#fd2f4b] font-extrabold">So Jobless BH</span>
+      </div>
+
+      <div class="mt-6 stack-lg">
+        <div class="row">
+          <div class="badge badge-yellow">✨ Fast</div>
+          <div class="badge badge-mint">🗓️ Daily</div>
+          <div class="badge badge-sky">📎 CV-aware</div>
+        </div>
+        <p class="text-gray-600 text-sm">
+          Sign in to manage your profile, pick roles, and let the system apply for you every morning in 🇧🇭.
+        </p>
+        <ul class="text-sm text-gray-700 grid gap-2">
+          <li>• One profile → dozens of applications</li>
+          <li>• Branded emails with your photo + intro</li>
+          <li>• Pause/resume anytime</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Right: Auth card -->
+    <section class="shell p-6 md:p-8">
+      <!-- Sign In Panel -->
+      <div id="panelSignIn" class="stack">
+        <h1 class="text-xl font-extrabold tracking-tight">Welcome back</h1>
+        <p class="muted">Use the email & password you registered with.</p>
+
+        <div id="siAlert" class="alert alert-err hidden"></div>
+
+        <div class="stack">
+          <label class="hint">Email</label>
+          <input id="siEmail" type="email" class="field" placeholder="you@email.com" autocomplete="email" />
+          <label class="hint">Password</label>
+          <input id="siPass" type="password" class="field" placeholder="••••••••" autocomplete="current-password" />
+          <button id="btnSignIn" class="btn btn-primary">Sign In</button>
+          <button id="swapToUp1" class="btn btn-ghost only-mobile">Create a new account</button>
+        </div>
+      </div>
+
+      <!-- Sign Up Panel -->
+      <div id="panelSignUp" class="stack hidden">
+        <h1 class="text-xl font-extrabold tracking-tight">Create account</h1>
+        <p class="muted">All fields are required so we can apply on your behalf.</p>
+
+        <div id="suAlert" class="alert alert-err hidden"></div>
+        <div id="suSuccess" class="alert alert-ok hidden"></div>
+
+        <div class="stack-lg">
+          <div class="stack">
+            <label class="hint">Email</label>
+            <input id="suEmail" type="email" class="field" placeholder="you@email.com" required />
+          </div>
+          <div class="stack">
+            <label class="hint">Password (min 6)</label>
+            <input id="suPass" type="password" class="field" placeholder="••••••••" required />
+          </div>
+
+          <div class="row">
+            <div class="stack" style="flex:1">
+              <label class="hint">Full name</label>
+              <input id="suFullName" type="text" class="field" placeholder="Jane Doe" required />
+            </div>
+            <div class="stack" style="flex:1">
+              <label class="hint">Profession</label>
+              <input id="suProfession" type="text" class="field" placeholder="Sales Associate" required />
+            </div>
+          </div>
+
+          <div class="stack">
+            <label class="hint">About you</label>
+            <textarea id="suAbout" rows="3" class="field" placeholder="Short bio" required></textarea>
+          </div>
+
+          <div class="stack">
+            <label class="hint">Profile Photo (JPG/PNG)</label>
+            <label class="drop" for="suPhotoFile">Tap to select an image…</label>
+            <input id="suPhotoFile" type="file" accept="image/*" class="hidden" required />
+            <div id="photoProg" class="progress hidden"></div>
+          </div>
+
+          <div class="stack">
+            <label class="hint">CV (PDF)</label>
+            <label class="drop" for="suCVFile">Tap to select a PDF…</label>
+            <input id="suCVFile" type="file" accept="application/pdf" class="hidden" required />
+            <div id="cvProg" class="progress hidden"></div>
+          </div>
+
+          <button id="btnSignUp" class="btn btn-primary">Create account</button>
+          <button id="swapToIn1" class="btn btn-ghost only-mobile">I already have an account</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase + Auth logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
@@ -94,68 +286,73 @@
     import { getStorage, ref as stRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js";
     import { firebaseConfig } from "./firebaseConfig.js";
 
+    /* Init */
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
     const storage = getStorage(app);
 
-    // --- UI helpers ---
-    const el = (id) => document.getElementById(id);
-    const show = (id, msg) => { const n = el(id); n.textContent = msg; n.classList.remove("hidden"); };
-    const hide = (id) => el(id).classList.add("hidden");
-    const setBusy = (btn, busy, labelBusy, labelIdle) => {
-      btn.classList.toggle("disabled", busy);
-      btn.disabled = busy;
-      btn.textContent = busy ? labelBusy : labelIdle;
-    };
+    /* Helpers */
+    const $ = (i) => document.getElementById(i);
+    const show = (id, msg) => { const n = $(id); n.textContent = msg; n.classList.remove("hidden"); };
+    const hide = (id) => $(id).classList.add("hidden");
+    const busy = (el, on, labelOn, labelOff) => { el.disabled = on; el.classList.toggle("disabled", on); el.textContent = on ? labelOn : labelOff; };
 
-    // Flip controls
-    const flipWrap = el("flipWrap");
-    el("showSignUp").addEventListener("click", () => flipWrap.classList.remove("flipped"));
-    el("showSignIn").addEventListener("click", () => flipWrap.classList.add("flipped"));
+    /* Tabs switching */
+    const tabIn  = $('showSignIn');
+    const tabUp  = $('showSignUp');
+    const pIn    = $('panelSignIn');
+    const pUp    = $('panelSignUp');
 
-    // Validation
-    function validateSignUp() {
-      hide("suAlert"); hide("suSuccess");
-      const email = el("suEmail").value.trim();
-      const pass  = el("suPass").value;
-      const fullName   = el("suFullName").value.trim();
-      const profession = el("suProfession").value.trim();
-      const about      = el("suAbout").value.trim();
-      const photoFile  = el("suPhotoFile").files[0];
-      const cvFile     = el("suCVFile").files[0];
+    function setTab(which){
+      if (which === 'in'){
+        tabIn.classList.add('active'); tabUp.classList.remove('active');
+        pIn.classList.remove('hidden'); pUp.classList.add('hidden');
+      } else {
+        tabUp.classList.add('active'); tabIn.classList.remove('active');
+        pUp.classList.remove('hidden'); pIn.classList.add('hidden');
+      }
+      // Clear alerts
+      hide('siAlert'); hide('suAlert'); hide('suSuccess');
+    }
+    // Wire buttons/tabs
+    tabIn.addEventListener('click', ()=>setTab('in'));
+    tabUp.addEventListener('click', ()=>setTab('up'));
+    $('swapToUp1')?.addEventListener('click', ()=>setTab('up'));
+    $('swapToIn1')?.addEventListener('click', ()=>setTab('in'));
+
+    // Ensure default view is Sign In
+    document.addEventListener('DOMContentLoaded', ()=> setTab('in'));
+
+    /* Validation (Sign Up) */
+    function validateSignUp(){
+      hide('suAlert'); hide('suSuccess');
+      const email = $('suEmail').value.trim();
+      const pass  = $('suPass').value;
+      const fullName   = $('suFullName').value.trim();
+      const profession = $('suProfession').value.trim();
+      const about      = $('suAbout').value.trim();
+      const photoFile  = $('suPhotoFile').files[0];
+      const cvFile     = $('suCVFile').files[0];
 
       if (!email || !pass || !fullName || !profession || !about || !photoFile || !cvFile) {
-        show("suAlert", "Please complete all fields and attach both files.");
-        return null;
+        show('suAlert', 'Please complete all fields and attach both files.'); return null;
       }
-      if (!/^\S+@\S+\.\S+$/.test(email)) {
-        show("suAlert", "Enter a valid email address.");
-        return null;
-      }
-      if (pass.length < 6) {
-        show("suAlert", "Password must be at least 6 characters.");
-        return null;
-      }
-      if (!photoFile.type.startsWith("image/")) {
-        show("suAlert", "Profile photo must be an image file.");
-        return null;
-      }
-      if (cvFile.type !== "application/pdf") {
-        show("suAlert", "CV must be a PDF file.");
-        return null;
-      }
+      if (!/^\S+@\S+\.\S+$/.test(email)) { show('suAlert', 'Enter a valid email address.'); return null; }
+      if (pass.length < 6) { show('suAlert', 'Password must be at least 6 characters.'); return null; }
+      if (!photoFile.type.startsWith('image/')) { show('suAlert', 'Profile photo must be an image file.'); return null; }
+      if (cvFile.type !== 'application/pdf') { show('suAlert', 'CV must be a PDF file.'); return null; }
       return { email, pass, fullName, profession, about, photoFile, cvFile };
     }
 
-    // Upload with progress
-    function uploadWithProgress(file, path, progElId) {
+    /* Upload with progress */
+    function uploadWithProgress(file, path, progId) {
       const ref = stRef(storage, path);
       const task = uploadBytesResumable(ref, file);
-      const progEl = el(progElId);
-      progEl.classList.remove("hidden");
+      const progEl = $(progId);
+      progEl.classList.remove('hidden');
       return new Promise((resolve, reject) => {
-        task.on("state_changed", (snap) => {
+        task.on('state_changed', (snap) => {
           const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
           progEl.textContent = `Uploading ${file.name}… ${pct}%`;
         }, reject, async () => {
@@ -166,67 +363,64 @@
       });
     }
 
-    // Sign Up
-    el("btnSignUp").addEventListener("click", async () => {
+    /* Sign Up */
+    $('btnSignUp').addEventListener('click', async () => {
       try {
-        const data = validateSignUp();
-        if (!data) return;
+        const data = validateSignUp(); if (!data) return;
+        const btn = $('btnSignUp');
+        busy(btn, true, 'Creating…', 'Create account');
 
-        setBusy(el("btnSignUp"), true, "Creating…", "Create account");
         const { email, pass, fullName, profession, about, photoFile, cvFile } = data;
 
         // 1) Auth
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         const uid = cred.user.uid;
 
-        // 2) Upload files to Storage (paths match your style)
-        const photoPath = `images/${crypto.randomUUID?.() || Date.now()}_${uid}`;
-        const cvPath    = `resumes/${crypto.randomUUID?.() || Date.now()}_${uid}.pdf`;
-
+        // 2) Upload
+        const id1 = (crypto.randomUUID?.() || Date.now()) + '_' + uid;
+        const photoPath = `images/${id1}`;
+        const cvPath    = `resumes/${id1}.pdf`;
         const [profileImageUrl, userCV] = await Promise.all([
-          uploadWithProgress(photoFile, photoPath, "photoProg"),
-          uploadWithProgress(cvFile, cvPath, "cvProg"),
+          uploadWithProgress(photoFile, photoPath, 'photoProg'),
+          uploadWithProgress(cvFile, cvPath, 'cvProg'),
         ]);
 
-        // 3) Write to /users/{uid}/info with EXACT field names found in your RTDB export
+        // 3) DB write
         await set(dbRef(db, `users/${uid}/info`), {
           userId: uid,
           email,
           fullName,
           profession,
           about,
-          profileImageUrl,   // uploaded image URL
-          userCV,            // uploaded CV URL
-          role: "candidate", // default per your data
-          status: "live",    // default per your data
-          phone: "unknown"   // default seen in many records
+          profileImageUrl,
+          userCV,
+          role: "candidate",
+          status: "live",
+          phone: "unknown",
         });
 
-        show("suSuccess", "Account created successfully!");
-        window.location.href = "./app.html";
+        show('suSuccess', 'Account created successfully! Redirecting…');
+        window.location.href = './app.html';
       } catch (e) {
         console.error(e);
-        show("suAlert", e?.message || "Could not create account.");
+        show('suAlert', e?.message || 'Could not create account.');
       } finally {
-        setBusy(el("btnSignUp"), false, "Creating…", "Create account");
+        busy($('btnSignUp'), false, 'Creating…', 'Create account');
       }
     });
 
-    // Sign In
-    el("btnSignIn").addEventListener("click", async () => {
+    /* Sign In */
+    $('btnSignIn').addEventListener('click', async () => {
       try {
-        hide("siAlert");
-        const email = el("siEmail").value.trim();
-        const pass  = el("siPass").value;
-        if (!email || !pass) {
-          show("siAlert", "Enter your email and password.");
-          return;
-        }
+        hide('siAlert');
+        const email = $('siEmail').value.trim();
+        const pass  = $('siPass').value;
+        if (!email || !pass) { show('siAlert', 'Enter your email and password.'); return; }
         await signInWithEmailAndPassword(auth, email, pass);
-        window.location.href = "./app.html";
+        window.location.href = './app.html';
       } catch (e) {
         console.error(e);
-        show("siAlert", e?.message || "Sign-in failed.");
+        show('siAlert', e?.message || 'Sign-in failed.');
       }
     });
   </script>

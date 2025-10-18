@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>So Jobless — Auto-Apply Admin</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root { color-scheme: light dark; }
+    .badge { padding: 2px 8px; font-size: 12px; border-radius: 9999px; font-weight: 600; display: inline-block; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-neutral-950 dark:text-neutral-100">
+  <div id="app" class="min-h-screen">
+    <!-- Header -->
+    <header class="sticky top-0 z-10 backdrop-blur bg-white/75 dark:bg-neutral-900/75 border-b border-gray-100 dark:border-neutral-800">
+      <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl flex items-center justify-center text-white font-bold" style="background:#fd2f4b">SJ</div>
+          <div>
+            <div class="font-extrabold tracking-tight text-lg text-[#fd2f4b]">So Jobless — Admin</div>
+            <div class="text-xs text-gray-500 dark:text-neutral-400">Daily Auto-Apply Controls</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2" id="auth-controls">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </header>
+
+    <!-- Toolbar -->
+    <section class="mx-auto max-w-7xl p-4">
+      <div class="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <div class="flex-1">
+            <label class="block text-xs text-gray-500 dark:text-neutral-400 mb-1">Search</label>
+            <input id="search" type="text" placeholder="Name, email, category…"
+              class="w-full rounded-xl border border-gray-200 dark:border-neutral-700 bg-white/70 dark:bg-neutral-800 px-3 py-2 outline-none focus:ring-2 focus:ring-[#fd2f4b]/30" />
+          </div>
+          <div class="grid grid-cols-2 md:flex md:flex-row gap-2">
+            <select id="statusFilter" class="rounded-xl border border-gray-200 dark:border-neutral-700 bg-white/70 dark:bg-neutral-800 px-3 py-2">
+              <option value="all">All statuses</option>
+              <option value="running">Running</option>
+              <option value="paused">Paused</option>
+              <option value="inprogress">In progress</option>
+            </select>
+            <button id="refreshBtn" class="rounded-xl border border-gray-200 dark:border-neutral-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800">Refresh</button>
+            <button id="pauseAllBtn" class="rounded-xl bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 px-3 py-2 hover:bg-gray-200 dark:hover:bg-neutral-700">Pause All</button>
+            <button id="resumeAllBtn" class="rounded-xl bg-[#fd2f4b] text-white px-3 py-2 hover:opacity-90">Resume All</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="mx-auto max-w-7xl p-4">
+      <div class="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-neutral-900/60 border-b border-gray-200 dark:border-neutral-800">
+              <tr class="text-left">
+                <th class="px-4 py-3 w-[28ch]">User</th>
+                <th class="px-4 py-3">Categories</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Last Run</th>
+                <th class="px-4 py-3">Jobs Today</th>
+                <th class="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <p id="emptyState" class="hidden mt-6 text-center text-sm text-gray-500 dark:text-neutral-400">No matching auto-apply entries.</p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mx-auto max-w-7xl p-6 text-xs text-gray-500 dark:text-neutral-500">
+      Tip: Use the toggles to pause/resume a user. “Pause All” sets <code>autoApplyEnabled=false</code> on everyone currently running.
+    </footer>
+  </div>
+
+  <!-- CONFIG (choose one of the two options below) -->
+  <!--
+    Option A: create firebaseConfig.js next to this file:
+
+      export const firebaseConfig = { ... };
+      export const APPLY_NOW_URL = "https://<region>-<project>.cloudfunctions.net/applyNow";
+
+    Option B: inline here (uncomment & fill):
+
+    <script>
+      window.firebaseConfig = { /* your keys */ };
+      window.APPLY_NOW_URL = "https://<region>-<project>.cloudfunctions.net/applyNow";
+    </script>
+  -->
+
+  <script type="module">
+    // Try to import config from local file; fallback to window.firebaseConfig
+    let firebaseConfig, APPLY_NOW_URL;
+    try {
+      const mod = await import('./firebaseConfig.js');
+      firebaseConfig = mod.firebaseConfig || mod.default || window.firebaseConfig;
+      APPLY_NOW_URL = mod.APPLY_NOW_URL || window.APPLY_NOW_URL || null;
+    } catch (e) {
+      firebaseConfig = window.firebaseConfig;
+      APPLY_NOW_URL = window.APPLY_NOW_URL || null;
+    }
+    if (!firebaseConfig) {
+      const warn = document.createElement('div');
+      warn.className = 'mx-auto max-w-7xl p-4 text-red-600';
+      warn.textContent = 'Missing firebaseConfig. Provide ./firebaseConfig.js or set window.firebaseConfig.';
+      document.body.prepend(warn);
+    }
+
+    // Firebase v10 (modular)
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+    import {
+      getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut
+    } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+    import {
+      getDatabase, ref, onValue, update
+    } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // Auth UI
+    const authCtr = document.getElementById('auth-controls');
+    function renderSignedOut() {
+      authCtr.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'rounded-xl bg-[#fd2f4b] text-white px-3 py-2 hover:opacity-90';
+      btn.textContent = 'Sign in with Google';
+      btn.onclick = async () => {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      };
+      authCtr.appendChild(btn);
+    }
+    function renderSignedIn(user, isAdmin) {
+      authCtr.innerHTML = '';
+      const avatar = document.createElement('img');
+      avatar.src = user.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.displayName || 'Admin');
+      avatar.alt = 'avatar';
+      avatar.className = 'h-8 w-8 rounded-full';
+      const name = document.createElement('span');
+      name.textContent = user.displayName || user.email || 'Admin';
+      name.className = 'text-sm hidden sm:inline';
+      const badge = document.createElement('span');
+      badge.textContent = isAdmin ? 'ADMIN' : 'NO ACCESS';
+      badge.className = 'ml-2 badge ' + (isAdmin ? 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300' : 'bg-red-600/10 text-red-700 dark:bg-red-400/10 dark:text-red-200');
+      const out = document.createElement('button');
+      out.textContent = 'Sign out';
+      out.className = 'rounded-xl border border-gray-200 dark:border-neutral-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800';
+      out.onclick = () => signOut(auth);
+      authCtr.append(avatar, name, badge, out);
+    }
+
+    let adminAllowed = false;
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        renderSignedOut();
+        document.getElementById('rows').innerHTML = '';
+        return;
+      }
+      const token = await user.getIdTokenResult(true);
+      adminAllowed = !!(token && token.claims && token.claims.admin); // requires custom claim
+      renderSignedIn(user, adminAllowed);
+      subscribeRows(); // if your rules allow public read, this will still work
+    });
+
+    // --- Data subscription --------------------------------------------------
+    const rowsTbody = document.getElementById('rows');
+    const emptyState = document.getElementById('emptyState');
+
+    let cache = {};
+    let flat = [];
+
+    function formatTs(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts);
+      return isNaN(d) ? '—' : d.toLocaleString();
+    }
+    function badge(status) {
+      if (status === 'inprogress') return '<span class="badge bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300">In progress</span>';
+      if (status === 'paused')     return '<span class="badge bg-gray-500/10 text-gray-700 dark:text-neutral-300 dark:bg-neutral-700/30">Paused</span>';
+      return '<span class="badge bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">Running</span>';
+    }
+    function deriveStatus(u) {
+      const enabled = u?.autoApplyEnabled !== false; // default to enabled if flag missing
+      const lock = !!u?.autoApply?.inProgress;
+      if (lock) return 'inprogress';
+      const hasTags = Array.isArray(u?.selectedTitleTags) && u.selectedTitleTags.length > 0;
+      return (enabled && hasTags) ? 'running' : 'paused';
+    }
+
+    function render() {
+      const q = (document.getElementById('search').value || '').toLowerCase();
+      const f = document.getElementById('statusFilter').value;
+
+      flat = Object.entries(cache).map(([uid, u]) => ({ uid, ...u }));
+
+      const filtered = flat
+        .filter(u => {
+          const hay = [
+            u.profile?.fullName, u.profile?.name, u.profile?.displayName, u.profile?.email, u.profile?.mail,
+            ...(u.selectedTitleTags || []), ...(u.autoApply?.categories || [])
+          ].join(' ').toLowerCase();
+          const status = deriveStatus(u);
+          const statusOk = (f === 'all') || (status === f);
+          return (!q || hay.includes(q)) && statusOk;
+        })
+        .sort((a,b) => (b.autoApply?.lastRunAt || 0) - (a.autoApply?.lastRunAt || 0));
+
+      rowsTbody.innerHTML = '';
+      if (!filtered.length) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      for (const u of filtered) {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-gray-100 dark:border-neutral-800';
+
+        const catsArr = Array.isArray(u.selectedTitleTags) && u.selectedTitleTags.length
+          ? u.selectedTitleTags
+          : (u.autoApply?.categories || []);
+        const cats = catsArr.length ? catsArr.join(', ') : '—';
+        const st = deriveStatus(u);
+        const jobsToday = u.autoApply?.jobsAppliedToday ?? 0;
+        const displayName = u.profile?.fullName || u.profile?.name || u.profile?.displayName || 'Unknown';
+        const displayEmail = u.profile?.email || u.profile?.mail || '—';
+
+        tr.innerHTML = `
+          <td class="px-4 py-3 align-top">
+            <div class="font-medium">${displayName}</div>
+            <div class="text-xs text-gray-500 dark:text-neutral-400">${displayEmail}</div>
+          </td>
+          <td class="px-4 py-3 align-top">${cats}</td>
+          <td class="px-4 py-3 align-top">${badge(st)}</td>
+          <td class="px-4 py-3 align-top">${formatTs(u.autoApply?.lastRunAt)}</td>
+          <td class="px-4 py-3 align-top">${jobsToday}</td>
+          <td class="px-4 py-3 align-top">
+            <div class="flex flex-wrap gap-2">
+              <button
+                data-action="toggle" data-uid="${u.uid}"
+                class="rounded-xl px-3 py-1.5 text-sm border ${st==='paused'
+                  ? 'bg-[#fd2f4b] text-white border-[#fd2f4b]'
+                  : 'border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'}">
+                ${st==='paused' ? 'Resume' : 'Pause'}
+              </button>
+              <button
+                data-action="run" data-uid="${u.uid}"
+                class="rounded-xl px-3 py-1.5 text-sm border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                Run Now
+              </button>
+              <button
+                data-action="zero" data-uid="${u.uid}"
+                class="rounded-xl px-3 py-1.5 text-sm border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                Reset Jobs Today
+              </button>
+            </div>
+          </td>
+        `;
+        rowsTbody.appendChild(tr);
+      }
+    }
+
+    let unsub;
+    function subscribeRows() {
+      if (unsub) unsub();
+      const usersRef = ref(db, 'users'); // your suite stores data here
+      unsub = onValue(usersRef, (snap) => {
+        const val = snap.val() || {};
+        cache = {};
+        for (const [uid, node] of Object.entries(val)) {
+          cache[uid] = {
+            uid,
+            profile: (node.profile || node.info || { name: node.name || node.fullName, email: node.email }) || {},
+            autoApply: node.autoApply || {},
+            selectedTitleTags: node.selectedTitleTags || [],
+            autoApplyEnabled: node.autoApplyEnabled !== false, // default enabled
+          };
+        }
+        render();
+      });
+    }
+
+    // Row actions
+    rowsTbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const uid = btn.dataset.uid;
+      const action = btn.dataset.action;
+      const u = cache[uid];
+      if (!u) return;
+
+      if (action === 'toggle') {
+        const willEnable = deriveStatus(u) === 'paused';
+        await update(ref(db, `users/${uid}`), {
+          autoApplyEnabled: willEnable,
+          'autoApply/enabled': willEnable,             // legacy compat
+          'autoApply/pausedByAdmin': !willEnable,      // legacy compat
+          'autoApply/pausedAt': willEnable ? null : Date.now(), // legacy compat
+        });
+      }
+
+      if (action === 'run') {
+        const tags = Array.isArray(u.selectedTitleTags) ? u.selectedTitleTags : [];
+        if (!tags.length) { alert('No categories saved for this user.'); return; }
+
+        if (APPLY_NOW_URL) {
+          try {
+            const res = await fetch(APPLY_NOW_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ uid, titleTags: tags })
+            });
+            if (!res.ok) throw new Error('Run Now failed');
+            alert('Run queued. Check Last Run / Jobs Today shortly.');
+          } catch (err) {
+            console.error(err);
+            alert('Run Now failed. Ensure APPLY_NOW_URL is set and CORS allows this origin.');
+          }
+        } else {
+          // fallback: flag that your backend could watch for
+          await update(ref(db, `users/${uid}`), { runNowRequested: Date.now() });
+          alert('Run requested. Backend should pick this up.');
+        }
+      }
+
+      if (action === 'zero') {
+        await update(ref(db, `users/${uid}/autoApply`), { jobsAppliedToday: 0 });
+      }
+    });
+
+    // Toolbar actions
+    document.getElementById('search').addEventListener('input', render);
+    document.getElementById('statusFilter').addEventListener('change', render);
+    document.getElementById('refreshBtn').addEventListener('click', () => subscribeRows());
+
+    async function bulkToggle(enable) {
+      const updates = {};
+      for (const uid of Object.keys(cache)) {
+        const u = cache[uid];
+        const currently = u?.autoApplyEnabled !== false;
+        if (enable && !currently) updates[`users/${uid}/autoApplyEnabled`] = true;
+        if (!enable && currently) updates[`users/${uid}/autoApplyEnabled`] = false;
+      }
+      if (Object.keys(updates).length) await update(ref(db), updates);
+    }
+    document.getElementById('pauseAllBtn').addEventListener('click', () => bulkToggle(false));
+    document.getElementById('resumeAllBtn').addEventListener('click', () => bulkToggle(true));
+  </script>
+</body>
+</html>

@@ -3,19 +3,67 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>So Jobless BH — Find It. Auto‑Apply. Get Hired.</title>
+  <title>RapidApply™ - Auto-Apply. Get Hired.</title>
 <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./app.css" />
+
+  <style>
+    /* HyperApply™ animated logo */
+    .hyper-logo{display:inline-flex;align-items:baseline;gap:.25rem;line-height:1;margin-bottom:.25rem;}
+   .hyper-word{
+  font-weight:900;
+  /* was clamp(40px,8.5vw,110px) */
+  font-size:clamp(56px,12vw,110px);
+  letter-spacing:-0.02em;
+  background:linear-gradient(90deg,#fd2f4b,#ff9a5a,#ffd166,#06d6a0,#5fb3ff,#c79eff,#fd2f4b);
+  background-size:400% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 6px 16px rgba(253,47,75,.18));
+  animation:hyper-sheen 6s linear infinite,hyper-pop .7s ease-out both;
+}
+.hyper-tm{
+  font-weight:800;
+  /* was clamp(14px,2.2vw,24px) */
+  font-size:clamp(18px,3.5vw,26px);
+  vertical-align:super;
+  color:#fd2f4b;
+}
+
+    .hyper-underline{
+      height:6px;
+      width:clamp(160px,40vw,520px);
+      background:linear-gradient(90deg, rgba(253,47,75,.55), rgba(253,47,75,0));
+      border-radius:9999px;
+      transform-origin:left;
+      animation:underline-swipe 1.1s ease both .35s;
+      margin-top:.35rem;
+      margin-bottom:.35rem;
+    }
+    @keyframes hyper-sheen{0%{background-position:0% 0%}100%{background-position:100% 0%}}
+    @keyframes hyper-pop{
+      0%{transform:translateY(10px) scale(.92);opacity:0}
+      60%{transform:translateY(0) scale(1.04);opacity:1}
+      100%{transform:translateY(0) scale(1)}
+    }
+    @keyframes underline-swipe{
+      from{transform:scaleX(0);opacity:0}
+      to{transform:scaleX(1);opacity:1}
+    }
+    /* Hover speed-up for fun */
+    .hyper-logo:hover .hyper-word{animation-duration:3.5s}
+  </style>
 </head>
 <body class="bg-white text-gray-900">
   <!-- Header -->
   <header class="sticky top-0 z-30 border-b border-gray-100 bg-white/80 backdrop-blur">
     <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
       <a href="./index.html" class="flex items-center gap-3">
-        <div class="h-9 w-9 rounded-xl flex items-center justify-center text-white font-bold glow" style="background:#fd2f4b">SJ</div>
+        <div class="h-9 w-9 rounded-xl flex items-center justify-center text-white font-bold glow" style="background:#fd2f4b">🇧🇭</div>
         <div class="leading-tight">
-          <div class="font-extrabold tracking-tight text-lg text-[#fd2f4b]">So Jobless BH</div>
-          <div class="text-[11px] text-gray-500">Jobs • Auto‑Apply • 🇧🇭 Bahrain</div>
+          <div class="font-extrabold tracking-tight text-lg text-[#fd2f4b]">RapidApply™</div>
+          <div class="text-[11px] text-gray-500">Jobs • Auto-Apply • 🇧🇭 Bahrain</div>
         </div>
       </a>
       <nav class="hidden md:flex items-center gap-6 text-sm">
@@ -39,12 +87,17 @@
 
     <div class="mx-auto max-w-7xl px-4 pt-8 pb-10 lg:pt-12 lg:pb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
       <div>
-        <span class="badge badge-yellow">✨ New: AI role tagging & daily auto‑apply</span>
+        <!-- Animated text logo -->
+        <div class="hyper-logo reveal" aria-label="HyperApply logo">
+          <span class="hyper-word">RapidApply</span><span class="hyper-tm">™</span>
+        </div>
+        <div class="hyper-underline"></div>
+
         <h1 class="mt-2 text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] reveal">
-          Auto‑apply to <span id="jobsHeadline" class="text-[#fd2f4b]">1,300+</span> jobs in Bahrain <span aria-hidden="true">🇧🇭</span>.
+          1-Click Auto-Apply to <span id="jobsHeadline" class="text-[#fd2f4b]">1,300+</span> Jobs in Bahrain <span aria-hidden="true">🇧🇭</span>.
         </h1>
         <p class="mt-3 text-gray-600 max-w-2xl text-lg reveal">
-          We scrape fresh vacancies every day and apply on your behalf—using your photo, title, intro, and CV—so you don’t miss opportunities.
+          We apply for fresh vacancies every day on your behalf—using your photo, title, intro, and CV—so you don’t miss opportunities.
         </p>
         <div class="mt-8 flex flex-wrap gap-3 reveal">
           <a id="ctaStart" href="./auth.html" class="rounded-xl px-5 py-3 text-white font-semibold glow" style="background:#fd2f4b">Sign Up</a>
@@ -57,9 +110,9 @@
             <div class="text-xs text-gray-500">Updated daily</div>
           </div>
           <div class="card rounded-xl p-4 bg-white tilt">
-            <div class="text-xs text-gray-500">Supported Roles</div>
+            <div class="text-xs text-gray-500">Categories</div>
             <div class="mt-1 text-3xl font-extrabold text-[#fd2f4b]"><span id="rolesCount">—</span>+</div>
-            <div class="text-xs text-gray-500">AI‑tagged</div>
+            <div class="text-xs text-gray-500">AI-tagged</div>
           </div>
         </div>
       </div>
@@ -70,7 +123,7 @@
           <div class="flex items-center gap-3">
             <div class="dial grid place-items-center" style="width:86px;height:86px;"><div class="dial-inner grid place-items-center" style="width:64px;height:64px;"><div class="text-[11px] font-extrabold text-[#fd2f4b]">AUTO</div></div></div>
             <div>
-              <div class="text-lg font-extrabold tracking-tight">Daily Auto‑Apply</div>
+              <div class="text-lg font-extrabold tracking-tight">You Also Get Daily Auto-Apply FREE</div>
               <div class="text-xs text-gray-600">Runs at <span class="font-semibold">09:00</span> 🇧🇭 • <span class="px-2 py-0.5 rounded-full bg-red-50 text-[#fd2f4b] border border-red-100 text-[10px] font-bold pulse">ON</span></div>
               <div class="mt-1 text-xs text-gray-600">Next: <span id="nextRun" class="font-semibold">09:00</span> • Yesterday <span id="appliedYesterday" class="font-semibold">—</span> • Total <span id="appliedTotal" class="font-semibold">—</span></div>
             </div>
@@ -80,8 +133,8 @@
         <div class="grid gap-4">
           <div class="rounded-3xl p-5 lg:p-6 card bg-white tilt">
             <div class="flex items-center justify-between">
-              <div class="text-sm font-bold text-[#fd2f4b]">One‑click Auto‑Apply</div>
-              <span class="badge badge-mint">No copy‑paste sprees 🪄</span>
+              <div class="text-sm font-bold text-[#fd2f4b]">One-click Auto-Apply</div>
+              <span class="badge badge-mint">No copy-paste sprees 🪄</span>
             </div>
             <div class="mt-4 grid grid-cols-3 gap-3">
               <div class="rounded-2xl p-4 bg-gradient-to-br from-rose-50 to-red-50 border border-red-100">
@@ -105,7 +158,7 @@
                 <span class="font-semibold">Pick up to 3 roles</span><br />Barista, Driver, Sales Exec…
               </div>
               <div class="rounded-xl p-3 bg-gradient-to-r from-purple-50 to-violet-50 border border-violet-100 text-sm">
-                <span class="font-semibold">We keep at it</span><br />New jobs? We auto‑apply daily.
+                <span class="font-semibold">We keep at it</span><br />New jobs? We auto-apply daily.
               </div>
             </div>
             <a href="./auth.html" class="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white font-semibold glow" style="background:#fd2f4b">
@@ -123,8 +176,8 @@
               <div class="mt-2 text-sm text-gray-700">Your vibe, our emails.</div>
             </div>
             <div class="rounded-2xl p-4 bg-white card tilt">
-              <div class="badge badge-mint">🗓️ Hands‑off</div>
-              <div class="mt-2 text-sm text-gray-700">Daily auto‑apply, done.</div>
+              <div class="badge badge-mint">🗓️ Hands-off</div>
+              <div class="mt-2 text-sm text-gray-700">Daily auto-apply, done.</div>
             </div>
           </div>
         </div>
@@ -134,14 +187,14 @@
 
   <!-- Features -->
   <section id="features" class="mx-auto max-w-7xl px-4 py-12 lg:py-16">
-    <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Why candidates choose <span class="text-[#fd2f4b]">So Jobless BH</span></h2>
+    <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Why candidates choose <span class="text-[#fd2f4b]">RapidApply™</span></h2>
     <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="card rounded-2xl p-5">
         <div class="text-sm font-bold text-[#fd2f4b]">Smart matching</div>
         <p class="mt-1 text-sm text-gray-600">AI tags your role from job titles & descriptions for precise targeting.</p>
       </div>
       <div class="card rounded-2xl p-5">
-        <div class="text-sm font-bold text-[#fd2f4b]">Daily auto‑apply</div>
+        <div class="text-sm font-bold text-[#fd2f4b]">Daily auto-apply</div>
         <p class="mt-1 text-sm text-gray-600">New postings are applied automatically every morning.</p>
       </div>
       <div class="card rounded-2xl p-5">
@@ -150,7 +203,7 @@
       </div>
       <div class="card rounded-2xl p-5">
         <div class="text-sm font-bold text-[#fd2f4b]">Privacy first</div>
-        <p class="mt-1 text-sm text-gray-600">Keys stay server‑side. You control when auto‑apply is enabled.</p>
+        <p class="mt-1 text-sm text-gray-600">Keys stay server-side. You control when auto-apply is enabled.</p>
       </div>
     </div>
   </section>
@@ -162,17 +215,17 @@
       <div class="rounded-2xl p-5 card bg-white reveal tilt">
         <div class="badge badge-yellow">Step 1</div>
         <div class="mt-2 font-semibold">Add your details</div>
-        <p class="text-sm text-gray-600 mt-1">Photo, title, 2‑line intro & your CV. Yes, that’s it.</p>
+        <p class="text-sm text-gray-600 mt-1">Photo, title, 2-line intro & your CV. Yes, that’s it.</p>
       </div>
       <div class="rounded-2xl p-5 card bg-white reveal tilt">
         <div class="badge badge-mint">Step 2</div>
         <div class="mt-2 font-semibold">Pick up to 3 roles</div>
-        <p class="text-sm text-gray-600 mt-1">We’ll laser‑target those (and only those).</p>
+        <p class="text-sm text-gray-600 mt-1">We’ll laser-target those (and only those).</p>
       </div>
       <div class="rounded-2xl p-5 card bg-white reveal tilt">
         <div class="badge badge-sky">Step 3</div>
         <div class="mt-2 font-semibold">Click apply</div>
-        <p class="text-sm text-gray-600 mt-1">We contact every match, then auto‑apply daily.</p>
+        <p class="text-sm text-gray-600 mt-1">We contact every match, then auto-apply daily.</p>
       </div>
     </div>
   </section>
@@ -186,7 +239,7 @@
         <p class="mt-1 text-sm text-gray-600">No, we track unique jobs per user and only apply to new ones.</p>
       </div>
       <div class="card rounded-2xl p-5">
-        <div class="font-semibold">Can I pause daily auto‑apply?</div>
+        <div class="font-semibold">Can I pause daily auto-apply?</div>
         <p class="mt-1 text-sm text-gray-600">Yes, toggle it off anytime from the Dashboard.</p>
       </div>
       <div class="card rounded-2xl p-5">
@@ -201,7 +254,7 @@
   </section>
 
   <footer class="py-10 text-center text-xs text-gray-400 border-t border-gray-100">
-    © <span id="year"></span> So Jobless BH — Auto‑Apply
+    © <span id="year"></span> RapidApply™ — Auto-Apply
   </footer>
 
   <!-- Firebase + dynamic counters -->
@@ -311,6 +364,15 @@
         setTimeout(()=>s.remove(), 1200);
       }
     }
+
+    // Burst confetti near the animated logo on load
+    window.addEventListener('load', ()=>{
+      const logo = document.querySelector('.hyper-logo');
+      if (logo){
+        const r = logo.getBoundingClientRect();
+        setTimeout(()=>poof(r.left + r.width/2, r.top + window.scrollY + r.height/2), 450);
+      }
+    });
     cta?.addEventListener('click', (e)=>{
       const r = e.currentTarget.getBoundingClientRect();
       poof(r.left + r.width/2, r.top + window.scrollY);

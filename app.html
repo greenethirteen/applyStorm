@@ -11,6 +11,29 @@
     :root { --brand:#fd2f4b; }
     body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
   </style>
+  
+  <style>
+    /* RapidApply text logo */
+    .rapid-logo{display:inline-flex;align-items:baseline;gap:.3rem;line-height:1;margin:4px 0;}
+    .rapid-word{
+      font-weight:900;
+      font-size:clamp(40px,9.5vw,90px);
+      letter-spacing:-0.02em;
+      background:linear-gradient(90deg,#fd2f4b,#ff9a5a,#ffd166,#06d6a0,#5fb3ff,#c79eff,#fd2f4b);
+      background-size:400% 100%;
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 6px 16px rgba(253,47,75,.18));
+      animation:rapid-sheen 7s linear infinite, rapid-pop .7s ease-out both;
+    }
+    .rapid-tm{font-weight:800;font-size:clamp(14px,3vw,22px);vertical-align:super;color:#fd2f4b}
+    .rapid-sub{font-weight:700;font-size:12px;color:#475569}
+    .rapid-underline{height:6px;width:clamp(160px,44vw,520px);background:linear-gradient(90deg, rgba(253,47,75,.55), rgba(253,47,75,0));border-radius:9999px;transform-origin:left;animation:rapid-line 1.1s ease both .35s;margin:.35rem 0}
+    @keyframes rapid-sheen{0%{background-position:0% 0%}100%{background-position:100% 0%}}
+    @keyframes rapid-pop{0%{transform:translateY(10px) scale(.92);opacity:0}60%{transform:translateY(0) scale(1.035);opacity:1}100%{transform:translateY(0) scale(1)}}
+    @keyframes rapid-line{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
+    .brand-chip{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:#fd2f4b;color:#fff;font-weight:900;box-shadow:0 8px 20px rgba(253,47,75,.25);transform:rotate(-6deg)}
+  </style>
+
   <link rel="stylesheet" href="./app.css" />
 </head>
 <body class="bg-neutral-50 text-neutral-900">
@@ -29,6 +52,20 @@
       </div>
     </div>
   </header>
+
+
+  <!-- RapidApply banner -->
+  <div class="max-w-6xl mx-auto px-4 pt-6">
+    <div class="rapid-logo" aria-label="RapidApply logo">
+      <span class="rapid-word">RapidApply</span><span class="rapid-tm">™</span>
+    </div>
+    <div class="rapid-underline"></div>
+    <div class="rapid-sub inline-flex items-center gap-2">
+      <span class="brand-chip">SJ</span>
+      Auto-apply engine · Simple daily automation for 🇧🇭
+    </div>
+  </div>
+
 
   <!-- Page -->
   <main class="max-w-6xl mx-auto px-4 py-6">
@@ -60,7 +97,31 @@
           </div>
         </div>
 
-        <div class="mt-6 grid grid-cols-2 gap-3">
+        
+<!-- Applied Activity (moved inside Your profile) -->
+<div id="appliedActivity" class="mt-6">
+  <div class="flex items-center justify-between gap-3">
+    <h3 class="text-base font-extrabold">Applied Activity</h3>
+    <div class="text-sm text-neutral-700 space-x-4">
+      <span>System total: <span id="systemAppliedCount" class="font-extrabold">0</span></span>
+      <span>Your total: <span id="totalAppliedCount" class="font-extrabold">0</span></span>
+    </div>
+  </div>
+  <div class="mt-3 rounded-xl border border-neutral-200 max-h-60 overflow-auto">
+    <ul id="appliedJobsUl" class="divide-y divide-neutral-200 text-sm">
+      <!-- Filled by JS -->
+    </ul>
+  </div>
+  <div class="mt-3 flex items-center justify-between">
+    <span id="appliedPageInfo" class="text-xs text-neutral-600">Latest first</span>
+    <button id="loadMoreApplied"
+      class="px-3 py-2 rounded-lg border border-neutral-300 bg-white text-sm hover:text-neutral-900">
+      Load older
+    </button>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-2 gap-3">
           <div class="rounded-xl border border-neutral-200 p-4">
             <div class="text-xs uppercase tracking-wide text-neutral-500">Live Jobs</div>
             <div class="mt-1 text-2xl font-extrabold"><span id="totalJobsCount">0</span></div>
@@ -83,12 +144,35 @@
           We’ll email every matching job, and keep auto-applying daily.
         </div>
 
+
+        <!-- Auto-Apply status & control -->
+        <div class="mb-4 p-4 border border-neutral-200 rounded-xl bg-white flex items-center justify-between gap-3 shadow-sm">
+          <div>
+            <div class="text-sm font-extrabold">Daily Auto‑Apply</div>
+            <div class="text-xs text-neutral-600">
+              Next run: <span id="nextRunText">—</span>
+              • Status:
+              <span id="autoStatusPill"
+                    class="px-2 py-0.5 rounded-full border text-[10px] font-bold">
+                —
+              </span>
+            </div>
+          </div>
+          <button id="autoToggleBtn"
+                  class="px-3 py-2 rounded-lg bg-neutral-900 text-white text-sm font-semibold">
+            Toggle
+          </button>
+        </div>
         <!-- Role selector -->
-        <label class="text-sm font-semibold">Roles</label>
-        <select id="rolePicker" class="mt-1 w-full border border-neutral-300 rounded-lg p-2 text-sm" multiple size="8"></select>
+        <label class="text-sm font-extrabold">Pick your roles</label>
+        <select id="rolePicker" class="hidden" multiple size="8"></select>
+
+        <!-- Visual role grid (click to select up to 3) -->
+        <div id="roleGrid" class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
 
         <!-- Chips preview -->
-        <div id="roleChips" class="mt-3 flex flex-wrap gap-2"></div>
+        <div class="mt-2 text-xs text-neutral-600">Your picks:</div>
+        <div id="roleChips" class="mt-1 flex flex-wrap gap-2"></div>
 
         <!-- Actions -->
         <div class="mt-5 flex items-center justify-between gap-3">
@@ -106,7 +190,7 @@
         </p>
       </section>
     </div>
-  </main>
+</main>
 
   <!-- App script (cache-busted so prod always pulls the latest) -->
   <script type="module" src="./app.js?v=2025-09-28b"></script>

@@ -586,8 +586,9 @@ export const applyDaily = onSchedule(
     const users = snap.val();
 
     for (const [uid, u] of Object.entries(users)) {
-      const tags = u.selectedTitleTags;
-      if (!Array.isArray(tags) || tags.length === 0) continue;
+    if (u.autoApplyEnabled === false) continue;
+    const tags = u.selectedTitleTags;      
+    if (!Array.isArray(tags) || tags.length === 0) continue;
       await processApply({ uid, titleTags: tags, brandUrl, from, apiKey });
       await wait(250);
     }
